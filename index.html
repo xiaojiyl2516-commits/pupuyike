@@ -9,6 +9,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
+
+    <style>
+    .tg-nav-btn {
+        width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+        border-radius:50%;color:var(--cyan);font-size:16px;transition:var(--transition);
+        text-decoration:none;background:rgba(0,229,255,0.08);
+    }
+    .tg-nav-btn:hover{background:var(--cyan);color:#0A0A1A;box-shadow:0 0 12px rgba(0,229,255,0.3)}
+    .checkin-card {
+        background:rgba(124,77,255,0.06);border:1px solid rgba(124,77,255,0.12);
+        border-radius:14px;padding:20px 16px;cursor:pointer;transition:var(--transition);flex:1;
+    }
+    .checkin-card:hover{background:rgba(124,77,255,0.14);border-color:var(--cyan);transform:translateY(-2px)}
+    .checkin-role-select{display:flex;gap:12px;margin-bottom:8px}
+    .checkin-result{animation:fadeIn .3s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    </style>
 </head>
 <body>
     <nav class="navbar" id="navbar">
@@ -26,8 +43,12 @@
             <a href="#" class="nav-link" data-filter="高新区">高新</a>
         </div>
         <div class="nav-actions">
+            <button class="icon-btn" id="checkinToggle" title="签到中心"><i class="fas fa-calendar-check"></i></button>
             <button class="icon-btn" id="searchToggle"><i class="fas fa-search"></i></button>
             <button class="icon-btn" id="filterToggle"><i class="fas fa-sliders-h"></i></button>
+            <a href="https://t.me/pupu25122512" target="_blank" class="tg-nav-btn" title="浦浦一刻">
+                <i class="fab fa-telegram-plane"></i>
+            </a>
         </div>
     </nav>
 
@@ -68,7 +89,7 @@
             <div class="hero-bg"></div>
             <div class="hero-content">
                 <h1 class="hero-title" data-text="浦浦荐逼">浦浦荐逼</h1>
-                <p class="hero-subtitle">成都 · 赛博江湖 · 私人伴游</p>
+                <p class="hero-subtitle">帮你精准筛出可去的好逼</p>
                 <div class="hero-stats"><span id="teacherCount">0</span> 位老师在线</div>
             </div>
         </section>
@@ -81,6 +102,60 @@
             <div class="card-grid" id="cardGrid"></div>
         </section>
     </main>
+
+    <!-- ==================== 签到中心弹窗 ==================== -->
+    <div class="modal-overlay" id="checkinModal">
+        <div class="modal-content" style="max-width:440px">
+            <button class="modal-close" id="checkinModalClose"><i class="fas fa-times"></i></button>
+            <div style="padding:24px;text-align:center">
+                <div style="font-size:40px;margin-bottom:8px">🎯</div>
+                <h2 style="font-size:20px;font-weight:800;margin-bottom:4px">签到中心</h2>
+                <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px">每日签到，福利不断</p>
+
+                <!-- 选择身份 -->
+                <div class="checkin-role-select" id="checkinRoleSelect">
+                    <div class="checkin-card" id="checkinAsWolf">
+                        <div style="font-size:36px;margin-bottom:8px">🐺</div>
+                        <h3 style="font-size:16px;font-weight:700;margin-bottom:4px">我是狼友</h3>
+                        <p style="font-size:12px;color:var(--text-muted)">签到赚积分 · 兑换优惠券</p>
+                    </div>
+                    <div class="checkin-card" id="checkinAsTeacher">
+                        <div style="font-size:36px;margin-bottom:8px">👩‍🏫</div>
+                        <h3 style="font-size:16px;font-weight:700;margin-bottom:4px">我是老师</h3>
+                        <p style="font-size:12px;color:var(--text-muted)">签到更新营业状态</p>
+                    </div>
+                </div>
+
+                <!-- 狼友签到结果 -->
+                <div class="checkin-result" id="wolfCheckinResult" style="display:none">
+                    <div style="font-size:48px;margin-bottom:8px">✅</div>
+                    <h3 style="font-size:18px;font-weight:700;color:var(--accent);margin-bottom:4px">签到成功！</h3>
+                    <p style="font-size:14px;color:var(--text-secondary);margin-bottom:12px" id="wolfCheckinMsg">+1 积分</p>
+                    <div style="background:rgba(124,77,255,0.1);border-radius:12px;padding:14px;margin-bottom:8px">
+                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">当前积分</div>
+                        <div style="font-size:32px;font-weight:800;color:var(--cyan)" id="wolfPointsDisplay">0 分</div>
+                    </div>
+                    <p style="font-size:11px;color:var(--text-muted)">积分可到浦浦一刻群内换取老师优惠券 🎫</p>
+                    <button class="btn-primary" id="wolfCheckinDone" style="margin-top:12px;width:100%">知道了</button>
+                </div>
+
+                <!-- 老师签到 -->
+                <div class="checkin-result" id="teacherCheckinResult" style="display:none">
+                    <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;color:var(--cyan)">选择你的老师身份</h3>
+                    <div id="teacherCheckinList" style="max-height:260px;overflow-y:auto;margin-bottom:12px"></div>
+                    <button class="btn-cancel" id="teacherCheckinBack" style="width:100%">返回</button>
+                </div>
+
+                <!-- 老师签到个人结果 -->
+                <div class="checkin-result" id="teacherCheckinDone" style="display:none">
+                    <div style="font-size:48px;margin-bottom:8px">✅</div>
+                    <h3 style="font-size:18px;font-weight:700;color:var(--cyan);margin-bottom:4px">状态已更新！</h3>
+                    <p style="font-size:14px;color:var(--text-secondary);margin-bottom:12px" id="teacherCheckinMsg">已切换为营业中</p>
+                    <button class="btn-primary" id="teacherCheckinFinished" style="width:100%">完成</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Teacher Detail Modal -->
     <div class="modal-overlay" id="teacherModal">

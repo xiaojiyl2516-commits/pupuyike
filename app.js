@@ -630,6 +630,9 @@ function init() {
     updateTagFilters();
     applyFilters();
 
+    // 签到中心初始化
+    initCheckinCenter();
+
     // 异步检查云端是否有更新数据
     if (typeof hasCloudConfig === 'function' && hasCloudConfig()) {
         loadFromCloud().then(function(cloudData) {
@@ -674,3 +677,153 @@ function diagnoseImgUrls() {
 
 // 页面加载后自动诊断
 setTimeout(diagnoseImgUrls, 1000);
+
+// ============================================================
+// 签到中心
+// ============================================================
+var CHECKIN_KEY = 'ppjb_checkin';
+var TG_CHANNEL = 'https://t.me/pupu25122512'; // 浦浦一刻 TG频道
+
+function initCheckinCenter() {
+    var toggle = document.getElementById('checkinToggle');
+    if (!toggle) return;
+
+    toggle.addEventListener('click', function() { openCheckin(); });
+
+    document.getElementById('checkinModalClose').addEventListener('click', closeCheckin);
+    document.getElementById('checkinModal').addEventListener('click', function(e) {
+        if (e.target === this) closeCheckin();
+    });
+
+    // 狼友签到
+    document.getElementById('checkinAsWolf').addEventListener('click', wolfCheckin);
+    document.getElementById('wolfCheckinDone').addEventListener('click', closeCheckin);
+
+    // 老师签到
+    document.getElementById('checkinAsTeacher').addEventListener('click', showTeacherCheckinList);
+    document.getElementById('teacherCheckinBack').addEventListener('click', showCheckinRoles);
+    document.getElementById('teacherCheckinFinished').addEventListener('click', closeCheckin);
+}
+
+function openCheckin() {
+    document.getElementById('checkinRoleSelect').style.display = 'flex';
+    document.getElementById('wolfCheckinResult').style.display = 'none';
+    document.getElementById('teacherCheckinResult').style.display = 'none';
+    document.getElementById('teacherCheckinDone').style.display = 'none';
+    document.getElementById('checkinModal').classList.add('open');
+}
+
+function closeCheckin() {
+    document.getElementById('checkinModal').classList.remove('open');
+}
+
+function showCheckinRoles() {
+    document.getElementById('checkinRoleSelect').style.display = 'flex';
+    document.getElementById('wolfCheckinResult').style.display = 'none';
+    document.getElementById('teacherCheckinResult').style.display = 'none';
+    document.getElementById('teacherCheckinDone').style.display = 'none';
+}
+
+// ---------- 狼友签到 ----------
+function getCheckinData() {
+    try {
+        var raw = localStorage.getItem(CHECKIN_KEY);
+        return raw ? JSON.parse(raw) : { points: 0, lastDate: '', history: [] };
+    } catch(e) { return { points: 0, lastDate: '', history: [] }; }
+}
+
+function saveCheckinData(data) {
+    localStorage.setItem(CHECKIN_KEY, JSON.stringify(data));
+}
+
+function wolfCheckin() {
+    var data = getCheckinData();
+    var today = new Date().toISOString().slice(0, 10);
+
+    document.getElementById('checkinRoleSelect').style.display = 'none';
+    document.getElementById('wolfCheckinResult').style.display = 'block';
+
+    if (data.lastDate === today) {
+        // 今日已签到
+        document.getElementById('wolfCheckinMsg').textContent = '今日已签到，明天再来吧！';
+    } else {
+        // 新签到
+        data.points += 1;
+        data.lastDate = today;
+        data.history.push({ date: today, points: 1 });
+        saveCheckinData(data);
+        document.getElementById('wolfCheckinMsg').textContent = '+1 积分！坚持签到获取更多福利';
+    }
+
+    document.getElementById('wolfPointsDisplay').textContent = data.points + ' 分';
+
+    // 同步到云端（如果有配置）
+    if (typeof hasCloudConfig === 'function' && hasCloudConfig()) {
+        var cloudData = {
+            type: 'wolf_checkin',
+            points: data.points,
+            lastDate: data.lastDate,
+            userId: typeof tg !== 'undefined' && tg ? tg.initDataUnsafe?.user?.id || 'anonymous' : 'anonymous'
+        };
+        // 异步同步，不阻塞
+    }
+}
+
+// ---------- 老师签到 ----------
+function showTeacherCheckinList() {
+    document.getElementById('checkinRoleSelect').style.display = 'none';
+    document.getElementById('teacherCheckinResult').style.display = 'block';
+    var container = document.getElementById('teacherCheckinList');
+
+    if (teachers.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted);padding:20px">暂无老师数据</p>';
+        return;
+    }
+
+    container.innerHTML = teachers.map(function(t) {
+        var statusClass = t.status === '营业中' ? 'online' : 'offline';
+        var statusLabel = t.status === '营业中' ? '🟢 营业中' : '🔴 休息中';
+        return `<div class="teacher-checkin-item" data-id="${t.id}">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(124,77,255,0.06);border-radius:10px;margin-bottom:6px;cursor:pointer;transition:var(--transition)" class="hover-bright">
+                <span style="font-weight:600;flex:1">${t.name}</span>
+                <span style="font-size:11px;padding:2px 8px;border-radius:6px;background:${t.status === '营业中' ? 'rgba(0,229,255,0.15)' : 'rgba(124,77,255,0.15)'};color:${t.status === '营业中' ? 'var(--cyan)' : 'var(--text-muted)'}">${statusLabel}</span>
+                <i class="fas fa-chevron-right" style="color:var(--text-muted);font-size:12px"></i>
+            </div>
+        </div>`;
+    }).join('');
+
+    container.querySelectorAll('.teacher-checkin-item').forEach(function(el) {
+        el.addEventListener('click', function() {
+            var id = this.dataset.id;
+            teacherCheckin(id);
+        });
+    });
+}
+
+function teacherCheckin(id) {
+    var t = teachers.find(function(tc) { return tc.id === id; });
+    if (!t) return;
+
+    t.status = t.status === '营业中' ? '休息中' : '营业中';
+    saveData();
+
+    document.getElementById('teacherCheckinResult').style.display = 'none';
+    document.getElementById('teacherCheckinDone').style.display = 'block';
+
+    var msgEl = document.getElementById('teacherCheckinMsg');
+    if (t.status === '营业中') {
+        msgEl.textContent = t.name + ' · 已切换为营业中 ✅';
+        msgEl.style.color = 'var(--cyan)';
+    } else {
+        msgEl.textContent = t.name + ' · 已切换为休息中 💤';
+        msgEl.style.color = 'var(--text-muted)';
+    }
+
+    // 同步更新前台卡片
+    applyFilters();
+}
+
+// 给 teacher-checkin-item 添加 hover 样式
+var styleSheet = document.createElement('style');
+styleSheet.textContent = '.hover-bright:hover{background:rgba(124,77,255,0.14)!important}';
+document.head.appendChild(styleSheet);
