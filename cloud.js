@@ -1,10 +1,20 @@
 // ============================================================
 // 浦浦荐逼 - 云端数据同步 (JSONBin.io)
+// 依赖: config.js 必须在 cloud.js 之前加载
+// ============================================================
+
+// ============================================================
+// 浦浦荐逼 - 云端数据同步 (JSONBin.io)
 // ============================================================
 
 var CLOUD_CONFIG_KEY = 'ppjb_cloud_config';
 
 function getCloudConfig() {
+    // 优先使用 config.js 中的硬编码配置（所有设备共享）
+    if (typeof CLOUD_CONFIG !== 'undefined' && CLOUD_CONFIG && CLOUD_CONFIG.binId) {
+        return { binId: CLOUD_CONFIG.binId, apiKey: CLOUD_CONFIG.apiKey || '' };
+    }
+    // 回退到 localStorage 中的配置（兼容 admin.html 中保存的）
     try {
         var raw = localStorage.getItem(CLOUD_CONFIG_KEY);
         return raw ? JSON.parse(raw) : null;
