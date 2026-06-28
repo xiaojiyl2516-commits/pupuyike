@@ -403,16 +403,7 @@ async function init() {
     // -- 签到 --
     initCheckin();
 
-    // -- 视图切换 --
-    document.getElementById('adminToggle').addEventListener('click',function(){
-        isAdmin = !isAdmin;
-        document.getElementById('frontendView').classList.toggle('active',!isAdmin);
-        document.getElementById('adminView').classList.toggle('active',isAdmin);
-        document.querySelectorAll('.frontend-only').forEach(function(el){el.style.display=isAdmin?'none':''});
-        document.getElementById('navbar').classList.toggle('in-admin',isAdmin);
-        this.classList.toggle('active',isAdmin);
-        if (isAdmin) {renderAdminTable();updateCloudStatusBadge()}
-    });
+    // 视图切换由 inline 脚本处理
 
     // ---- 后台绑定 ----
     document.getElementById('addTeacherBtn').addEventListener('click',function(){openEditor(null)});
