@@ -8,6 +8,60 @@
 // ============================================================
 
 var CLOUD_CONFIG_KEY = 'ppjb_cloud_config';
+// 通过 Vercel 代理调用 JSONBin（解决跨域问题）
+async function saveToCloudViaProxy(teachersData) {
+    var config = getCloudConfig();
+    if (!config || !config.binId) return false;
+
+    try {
+        var proxyUrl = window.location.origin + '/api/sync';
+        var res = await fetch(proxyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'push',
+                binId: config.binId,
+                apiKey: config.apiKey || '',
+                data: teachersData
+            })
+        });
+        if (!res.ok) throw new Error('代理返回 ' + res.status);
+        var result = await res.json();
+        console.log('[云同步] 通过代理推送成功');
+        return true;
+    } catch(e) {
+        console.warn('[云同步] 代理推送失败:', e.message);
+        return false;
+    }
+}
+
+async function loadFromCloudViaProxy() {
+    var config = getCloudConfig();
+    if (!config || !config.binId) return null;
+
+    try {
+        var proxyUrl = window.location.origin + '/api/sync';
+        var res = await fetch(proxyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'pull',
+                binId: config.binId,
+                apiKey: config.apiKey || ''
+            })
+        });
+        if (!res.ok) throw new Error('代理返回 ' + res.status);
+        var result = await res.json();
+        if (result && result.record) return result.record;
+        if (Array.isArray(result)) return result;
+        if (result && Array.isArray(result.data)) return result.data;
+        return null;
+    } catch(e) {
+        console.warn('[云同步] 代理拉取失败:', e.message);
+        return null;
+    }
+}
+
 
 function getCloudConfig() {
     // 优先使用 config.js 中的硬编码配置（所有设备共享）
@@ -60,6 +114,11 @@ async function loadFromCloud() {
 
 // 保存数据到云端
 async function saveToCloud(teachersData) {
+    // 优先通过代理（解决跨域）
+    var ok = await saveToCloudViaProxy(teachersData);
+    if (ok) return true;
+
+    // 回退直连
     var config = getCloudConfig();
     if (!config || !config.binId) return false;
 
@@ -75,10 +134,10 @@ async function saveToCloud(teachersData) {
         });
         if (!res.ok) throw new Error('HTTP ' + res.status);
 
-        console.log('[云同步] 保存到云端成功');
+        console.log('[云同步] 直连推送成功');
         return true;
     } catch(e) {
-        console.warn('[云同步] 保存失败:', e.message);
+        console.warn('[云同步] 直连推送失败:', e.message);
         return false;
     }
 }
