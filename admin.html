@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>蓉城·名媛 - 管理后台</title>
+    <title>浦浦荐逼 · 管理后台</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -61,7 +61,7 @@
 </head>
 <body>
     <div class="admin-header">
-        <h1><i class="fas fa-shield-alt"></i> 蓉城·名媛 · 管理后台</h1>
+        <h1><i class="fas fa-shield-alt"></i> 浦浦荐逼 · 管理后台</h1>
         <div class="admin-actions">
             <a href="index.html" class="btn-sm" style="background:rgba(255,255,255,0.06);color:var(--text-secondary);text-decoration:none"><i class="fas fa-external-link-alt"></i> 查看前台</a>
             <button class="btn-add" id="addTeacherBtn"><i class="fas fa-plus"></i> 添加老师</button>
@@ -136,6 +136,13 @@
 
     <!-- Data Export/Import -->
     <div class="data-actions">
+        <div id="dataStatus" style="margin-bottom:12px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;display:flex;align-items:center;gap:10px;font-size:13px">
+            <i class="fas fa-database"></i>
+            <span id="dataCountLabel">当前 localStorage 中存储了 <strong style="color:#fff">0</strong> 位老师数据</span>
+            <button onclick="localStorage.removeItem('cd_teachers_data');alert('缓存已清除，刷新页面后将重新加载默认数据');location.reload()" style="margin-left:auto;padding:4px 10px;font-size:11px;border-radius:6px;background:rgba(229,9,20,0.2);color:var(--accent);cursor:pointer;border:none">
+                <i class="fas fa-trash"></i> 清除缓存
+            </button>
+        </div>
         <h3><i class="fas fa-database"></i> 数据管理</h3>
         <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">你可以导出全部数据（JSON格式），编辑后粘贴回下方导入。</p>
         <button class="btn-export" id="exportBtn" style="margin-bottom:8px"><i class="fas fa-download"></i> 导出数据 (JSON)</button>

@@ -1,5 +1,5 @@
 // ============================================================
-// 蓉城·名媛 - 管理后台逻辑
+// 浦浦荐逼 - 管理后台逻辑
 // ============================================================
 
 let editingId = null;
@@ -35,6 +35,10 @@ function initAdmin() {
 }
 
 function renderAdminTable() {
+    const countLabel = document.getElementById('dataCountLabel');
+    if (countLabel) {
+        countLabel.innerHTML = '当前 localStorage 中存储了 <strong style="color:#fff">' + teachers.length + '</strong> 位老师数据';
+    }
     const tbody = document.getElementById('teacherTableBody');
     tbody.innerHTML = teachers.map(t => `
         <tr>

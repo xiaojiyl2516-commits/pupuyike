@@ -1,5 +1,5 @@
 // ============================================================
-// 蓉城·名媛 - Telegram Mini App 主逻辑
+// 浦浦荐逼 - Telegram Mini App 主逻辑
 // ============================================================
 
 // ---------- Telegram WebApp 初始化 ----------
@@ -146,11 +146,15 @@ function loadData() {
     if (saved) {
         try {
             teachers = JSON.parse(saved);
+            console.log('[浦浦荐逼] 已加载 localStorage 数据: ' + teachers.length + ' 位老师');
             return;
-        } catch(e) {}
+        } catch(e) {
+            console.warn('[浦浦荐逼] localStorage 数据解析失败，使用默认数据');
+        }
     }
     teachers = JSON.parse(JSON.stringify(DEFAULT_TEACHERS));
     saveData();
+    console.log('[浦浦荐逼] 已加载默认示例数据: ' + teachers.length + ' 位老师');
 }
 
 function saveData() {
@@ -483,6 +487,9 @@ function submitReview() {
 // ---------- 初始化 ----------
 function init() {
     loadData();
+
+    // ✅ 如果是后台页面，跳过所有 UI 绑定（admin.html 不需要前台 UI）
+    if (!document.getElementById('cardGrid')) return;
 
     // Nav links
     document.querySelectorAll('.nav-link').forEach(link => {

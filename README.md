@@ -1,4 +1,4 @@
-# 蓉城·名媛 - Telegram Mini App
+# 浦浦荐逼 - Telegram Mini App
 
 ## 📱 项目介绍
 
@@ -68,7 +68,7 @@ telegram-miniapp/
 ### 步骤1：创建 Bot
 1. 在 Telegram 搜索 **@BotFather**
 2. 发送 `/newbot`
-3. 给 bot 起名（如 `成都名媛`）
+3. 给 bot 起名（如 `浦浦荐逼`）
 4. 获取 **Token**（形如 `123456:ABC-DEF1234gh...`）
 
 ### 步骤2：设置 Mini App
@@ -84,7 +84,7 @@ telegram-miniapp/
 ```
 然后粘贴：
 ```
-start - 打开蓉城名媛
+start - 打开浦浦荐逼
 search - 搜索老师
 checkin - 签到更新状态
 ```
