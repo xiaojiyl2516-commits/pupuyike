@@ -97,10 +97,13 @@ async function loadFromCloud() {
 }
 
 async function saveToCloud(teachersData) {
+    var proxyErr = '';
     try {
         var ok = await saveToCloudViaProxy(teachersData);
         if (ok) return true;
-    } catch(e) { CLOUD_LAST_ERROR = '代理保存异常: ' + e.message; }
+        proxyErr = CLOUD_LAST_ERROR;
+    } catch(e) { proxyErr = '代理异常: ' + e.message; }
+    // 代理失败，尝试直连
     var config = getCloudConfig();
     if (!config || !config.binId) return false;
     var url = 'https://api.jsonbin.io/v3/b/' + config.binId;
@@ -108,10 +111,10 @@ async function saveToCloud(teachersData) {
         var headers = { 'Content-Type': 'application/json' };
         if (config.apiKey) headers['X-Master-Key'] = config.apiKey;
         var res = await fetch(url, { method: 'PUT', headers: headers, body: JSON.stringify(teachersData) });
-        if (!res.ok) { CLOUD_LAST_ERROR = '直连推送 HTTP ' + res.status; return false; }
+        if (!res.ok) { CLOUD_LAST_ERROR = '直连 HTTP ' + res.status + '（代理错误: ' + proxyErr + '）'; return false; }
         return true;
     } catch(e) {
-        CLOUD_LAST_ERROR = '直连推送失败: ' + e.message + '（浏览器跨域限制，请确保代理可用）';
+        CLOUD_LAST_ERROR = '直连跨域失败。代理返回: ' + proxyErr;
         return false;
     }
 }
