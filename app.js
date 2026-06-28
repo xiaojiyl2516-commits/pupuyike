@@ -455,15 +455,29 @@ function importData() {
     }
 }
 
-// ========== 本地上传(转base64) ==========
+// ========== 本地上传(压缩后转base64) ==========
 function uploadPic() {
     var file = document.getElementById('picInput').files[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { alert('请选择图片文件'); return; }
     var reader = new FileReader();
     reader.onload = function(e) {
-        photoUrls.push(e.target.result);
-        renderPhotoInputs();
+        var img = new Image();
+        img.onload = function() {
+            // 压缩到最大宽度200px，保持比例
+            var maxW = 200, maxH = 250;
+            var w = img.width, h = img.height;
+            if (w > maxW) { h = h * maxW / w; w = maxW; }
+            if (h > maxH) { w = w * maxH / h; h = maxH; }
+            var canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            var compressed = canvas.toDataURL('image/jpeg', 0.5);
+            photoUrls.push(compressed);
+            renderPhotoInputs();
+        };
+        img.src = e.target.result;
     };
     reader.readAsDataURL(file);
     document.getElementById('picInput').value = '';
