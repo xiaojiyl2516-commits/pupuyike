@@ -1,399 +1,146 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>浦浦荐逼 · 赛博江湖</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        .view-switch{display:none}.view-switch.active{display:block}
-        .admin-only{display:none}.in-admin .admin-only{display:inline-block}
-        .frontend-only{display:block}.in-admin .frontend-only{display:none}
-        
-        .admin-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:var(--text-muted);font-size:14px;transition:var(--transition);border:1px solid rgba(124,77,255,0.15);background:rgba(124,77,255,0.06)}
-        .admin-btn:hover{background:rgba(124,77,255,0.15);color:var(--purple)}
-        .admin-btn.active{background:var(--purple);color:#fff;border-color:var(--purple)}
-
-        .admin-layout{display:none;padding:0 24px;margin-top:80px}
-        .admin-layout.active{display:block}
-        .admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px}
-        .admin-header h2{font-size:18px;font-weight:700}
-        .admin-table-wrap{overflow-x:auto;background:var(--bg-card);border-radius:12px;margin-bottom:16px}
-        .admin-table-wrap table{width:100%;border-collapse:collapse}
-        .admin-table-wrap th{background:var(--bg-elevated);padding:10px 12px;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;text-align:left;white-space:nowrap}
-        .admin-table-wrap td{padding:10px 12px;font-size:12px;color:var(--text-secondary);border-bottom:1px solid rgba(255,255,255,0.03);vertical-align:middle}
-        .admin-table-wrap tr:hover td{background:rgba(255,255,255,0.02)}
-        .tag-pills{display:flex;gap:3px;flex-wrap:wrap}
-        .tag-pill{font-size:10px;font-weight:500;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,0.06);color:var(--text-secondary)}
-        .act-btn{padding:4px 8px;font-size:11px;font-weight:600;border-radius:5px;transition:var(--transition);color:var(--text-secondary)}
-        .act-btn:hover{background:rgba(255,255,255,0.06)}
-        .act-btn.edit{color:var(--blue)}.act-btn.del{color:var(--accent)}.act-btn.tog{color:var(--cyan)}
-
-        .editor-overlay{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;background:rgba(5,0,20,0.9);backdrop-filter:blur(8px);padding:20px}
-        .editor-overlay.open{display:flex}
-        .editor-panel{background:var(--bg-secondary);border-radius:16px;padding:24px;width:100%;max-width:580px;max-height:85vh;overflow-y:auto;border:1px solid rgba(124,77,255,0.12)}
-        .editor-panel h2{font-size:17px;font-weight:700;margin-bottom:14px}
-        .f-group{margin-bottom:10px}
-        .f-group label{display:block;font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
-        .f-group input,.f-group textarea,.f-group select{width:100%;padding:8px 10px;background:rgba(124,77,255,0.06);border:1px solid rgba(124,77,255,0.1);border-radius:7px;color:#fff;font-size:13px;font-family:inherit}
-        .f-group input:focus,.f-group textarea:focus{border-color:var(--cyan)}
-        .f-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-        .f-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:10px;border-top:1px solid rgba(124,77,255,0.06)}
-        .p-input{display:flex;gap:6px;align-items:center;margin-bottom:4px}
-        .p-input input{flex:1}
-        .add-p-btn{padding:7px 10px;font-size:11px;border-radius:6px;background:rgba(124,77,255,0.08);color:var(--text-secondary);transition:var(--transition)}
-        .add-p-btn:hover{background:rgba(124,77,255,0.15);color:#fff}
-        .rm-p-btn{color:var(--accent);padding:3px;font-size:11px}
-        .upload-progress{display:none;margin-top:4px;padding:6px 10px;background:rgba(0,229,255,0.06);border-radius:6px;font-size:11px;color:var(--cyan)}
-
-        .data-actions{padding:14px;background:var(--bg-card);border-radius:12px;margin-top:16px}
-        .data-actions h3{font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text-secondary)}
-        .code-area{width:100%;min-height:80px;padding:8px;background:#0d0d1a;border:1px solid rgba(124,77,255,0.08);border-radius:6px;color:#a0a0c0;font-size:11px;font-family:monospace;resize:vertical}
-
-        @media(max-width:640px){
-            .f-row{grid-template-columns:1fr}
-            .admin-layout{padding:0 14px}
-            .admin-table-wrap th,.admin-table-wrap td{padding:6px 8px;font-size:11px}
-        }
-    </style>
-
-        <script>
-    // 独立控制脚本（不依赖 app.js 是否初始化完成）
-    document.addEventListener('DOMContentLoaded', function() {
-        // === 视图切换 ===
-        var btn = document.getElementById('adminToggle');
-        var fe = document.getElementById('frontendView');
-        var av = document.getElementById('adminView');
-        if (btn && fe && av) {
-            btn.addEventListener('click', function() {
-                var isAdmin = av.style.display === 'block';
-                fe.style.display = isAdmin ? 'block' : 'none';
-                av.style.display = isAdmin ? 'none' : 'block';
-                document.querySelectorAll('.frontend-only').forEach(function(el) {
-                    el.style.display = isAdmin ? '' : 'none';
-                });
-                btn.classList.toggle('active', !isAdmin);
-                if (!isAdmin && typeof renderAdminTable === 'function') {
-                    renderAdminTable();
-                    if (typeof updateCloudStatusBadge === 'function') updateCloudStatusBadge();
-                }
-            });
-        }
-
-        // === 后台按钮绑定（不依赖 init 执行完毕） ===
-        function tryBind(id, fn) {
-            var el = document.getElementById(id);
-            if (el) el.addEventListener('click', fn);
-        }
-
-        // 添加/编辑老师
-        tryBind('addTeacherBtn', function(){ if(typeof openEditor==='function') openEditor(null); });
-        tryBind('editorSave', function(){ if(typeof saveTeacher==='function') saveTeacher(); });
-        tryBind('editorCancel', function(){ if(typeof closeEditor==='function') closeEditor(); });
-
-        // 照片
-        tryBind('addPhotoBtn', function(){
-            if (typeof photoUrls !== 'undefined') { photoUrls.push(''); renderPhotoInputs(); }
-        });
-        tryBind('uploadNewBtn', function(){
-            var inp = document.getElementById('imgurFileInput');
-            if (inp) inp.click();
-        });
-        tryBind('imgurFileInput', function(e){
-            if (this.files && this.files[0] && typeof uploadToImgur==='function') uploadToImgur(this.files[0]);
-            this.value = '';
-        });
-
-        // 数据管理
-        tryBind('exportBtn', function(){ if(typeof exportData==='function') exportData(); });
-        tryBind('importBtn', function(){ if(typeof importData==='function') importData(); });
-        tryBind('cloudPushBtn', async function(){
-            if(typeof hasCloudConfig !== 'function' || !hasCloudConfig()) {
-                var msg = document.getElementById('cloudMessage');
-                if(msg){msg.textContent='⚠️ 未配置云端';msg.style.color='var(--orange)'}
-                return;
-            }
-            this.disabled = true;
-            var ok = await saveToCloud(teachers);
-            this.disabled = false;
-            var el = document.getElementById('cloudMessage');
-            if(el){el.textContent=ok?'✅ 推送成功':'❌ 推送失败';el.style.color=ok?'var(--green)':'var(--accent)'}
-        });
-        tryBind('cloudTestProxyBtn', async function(){
-            var el = document.getElementById('cloudMessage');
-            if(!el||typeof testProxyConnection!=='function') return;
-            el.textContent = '⏳ 测试中...';
-            el.style.color = 'var(--cyan)';
-            var r = await testProxyConnection();
-            el.textContent = r.ok?'✅ '+r.msg:'❌ '+r.msg;
-            el.style.color = r.ok?'var(--green)':'var(--accent)';
-        });
-        tryBind('cloudLoadBtn', async function(){
-            var el = document.getElementById('cloudMessage');
-            if(!el||typeof loadFromCloud!=='function') return;
-            el.textContent = '⏳ 拉取中...';
-            el.style.color = 'var(--cyan)';
-            var cd = await loadFromCloud();
-            if(cd&&cd.length>0&&typeof teachers!=='undefined') {
-                teachers = cd;
-                localStorage.setItem('cd_teachers_data', JSON.stringify(teachers));
-                el.textContent = '✅ 拉取 '+cd.length+' 位老师';
-                el.style.color = 'var(--green)';
-                if(typeof renderAdminTable==='function') renderAdminTable();
-                if(typeof applyFilters==='function') applyFilters();
-            } else {
-                el.textContent = '❌ 拉取失败或为空';
-                el.style.color = 'var(--accent)';
-            }
-        });
-    });
-    </script></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>浦浦荐逼</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- ==================== NAVBAR ==================== -->
-    <nav class="navbar" id="navbar">
-        <div class="nav-brand">
-            <span class="brand-icon">✦</span>
-            <span class="brand-text">浦浦荐逼</span>
-        </div>
-        <div class="nav-links frontend-only" id="navLinks">
-            <a href="#" class="nav-link active" data-filter="all">全部</a>
-            <a href="#" class="nav-link" data-filter="锦江区">锦江</a>
-            <a href="#" class="nav-link" data-filter="青羊区">青羊</a>
-            <a href="#" class="nav-link" data-filter="成华区">成华</a>
-            <a href="#" class="nav-link" data-filter="武侯区">武侯</a>
-            <a href="#" class="nav-link" data-filter="金牛区">金牛</a>
-            <a href="#" class="nav-link" data-filter="高新区">高新</a>
-        </div>
-        <div class="nav-actions">
-            <button class="icon-btn frontend-only" id="checkinToggle" title="签到中心"><i class="fas fa-calendar-check"></i></button>
-            <button class="icon-btn frontend-only" id="searchToggle"><i class="fas fa-search"></i></button>
-            <button class="icon-btn frontend-only" id="filterToggle"><i class="fas fa-sliders-h"></i></button>
-            <button class="admin-btn" id="adminToggle" title="管理后台"><i class="fas fa-shield-alt"></i></button>
-            <a href="https://t.me/pupu25122512" target="_blank" class="tg-nav-btn" title="浦浦一刻"><i class="fab fa-telegram-plane"></i></a>
-        </div>
-    </nav>
 
-    <!-- ===== 搜索 ===== -->
-    <div class="search-bar frontend-only" id="searchBar">
-        <i class="fas fa-search search-icon"></i>
-        <input type="text" id="searchInput" placeholder="搜索老师花名、标签、简介...">
-        <button class="icon-btn search-close" id="searchClose"><i class="fas fa-times"></i></button>
+<nav class="navbar" id="navbar">
+    <div class="nav-brand"><span class="brand-icon">✦</span><span class="brand-text">浦浦荐逼</span></div>
+    <div class="nav-links" id="navLinks">
+        <a href="#" class="nav-link active" data-filter="all">全部</a>
+        <a href="#" class="nav-link" data-filter="锦江区">锦江</a>
+        <a href="#" class="nav-link" data-filter="青羊区">青羊</a>
+        <a href="#" class="nav-link" data-filter="成华区">成华</a>
+        <a href="#" class="nav-link" data-filter="武侯区">武侯</a>
+        <a href="#" class="nav-link" data-filter="金牛区">金牛</a>
+        <a href="#" class="nav-link" data-filter="高新区">高新</a>
     </div>
-
-    <!-- ===== 筛选 ===== -->
-    <div class="filter-panel frontend-only" id="filterPanel">
-        <div class="filter-section"><h4>标签筛选</h4><div class="tag-filters" id="tagFilters"><span class="filter-tag active" data-tag="all">全部</span></div></div>
-        <div class="filter-section"><h4>价格区间</h4><div class="price-range"><input type="number" id="priceMin" placeholder="最低价"><span class="price-sep">—</span><input type="number" id="priceMax" placeholder="最高价"><button class="btn-sm" id="priceFilterBtn">确定</button></div></div>
-        <div class="filter-section"><h4>开课状态</h4><div class="status-filters"><label><input type="radio" name="status" value="all" checked> 全部</label><label><input type="radio" name="status" value="营业中"> 营业中</label><label><input type="radio" name="status" value="休息中"> 休息中</label></div></div>
+    <div class="nav-actions">
+        <button class="icon-btn" id="checkinBtn" title="签到"><i class="fas fa-calendar-check"></i></button>
+        <button class="icon-btn" id="searchToggle"><i class="fas fa-search"></i></button>
+        <button class="icon-btn" id="filterToggle"><i class="fas fa-sliders-h"></i></button>
+        <a href="https://t.me/pupu25122512" target="_blank" class="tg-nav-btn"><i class="fab fa-telegram-plane"></i></a>
     </div>
+</nav>
 
-    <!-- ==================== 前台视图 ==================== -->
-    <div id="frontendView" class="view-switch active">
-        <main class="main-content" id="mainContent">
-            <section class="hero">
-                <div class="hero-bg"></div>
-                <div class="hero-content">
-                    <h1 class="hero-title" data-text="浦浦荐逼">浦浦荐逼</h1>
-                    <p class="hero-subtitle">帮你精准筛出可去的好逼</p>
-                    <div class="hero-stats"><span id="teacherCount">0</span> 位老师在线</div>
-                </div>
-            </section>
-            <section class="category-section">
-                <div class="section-header"><h2 class="section-title">全部老师</h2><span class="section-badge" id="totalBadge">0</span></div>
-                <div class="card-grid" id="cardGrid"></div>
-            </section>
-        </main>
+<div class="search-bar" id="searchBar">
+    <i class="fas fa-search search-icon"></i>
+    <input type="text" id="searchInput" placeholder="搜索老师...">
+    <button class="icon-btn search-close" id="searchClose"><i class="fas fa-times"></i></button>
+</div>
+
+<div class="filter-panel" id="filterPanel">
+    <div class="filter-section"><h4>标签</h4><div class="tag-filters" id="tagFilters"><span class="filter-tag active" data-tag="all">全部</span></div></div>
+    <div class="filter-section"><h4>价格</h4><div class="price-range"><input type="number" id="priceMin" placeholder="最低"><span class="price-sep">—</span><input type="number" id="priceMax" placeholder="最高"><button class="btn-sm" id="priceFilterBtn">确定</button></div></div>
+    <div class="filter-section"><h4>状态</h4><div class="status-filters"><label><input type="radio" name="status" value="all" checked> 全部</label><label><input type="radio" name="status" value="营业中"> 营业中</label><label><input type="radio" name="status" value="休息中"> 休息中</label></div></div>
+</div>
+
+<div class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+        <h1 class="hero-title" data-text="浦浦荐逼">浦浦荐逼</h1>
+        <p class="hero-subtitle">帮你精准筛出可去的好逼</p>
+        <div class="hero-stats"><span id="teacherCount">0</span> 位老师在线</div>
     </div>
+</div>
 
-    <!-- ==================== 后台视图 ==================== -->
-    <div class="admin-layout" id="adminView">
-        <div class="admin-header">
-            <h2><i class="fas fa-shield-alt"></i> 管理后台</h2>
-            <div style="display:flex;gap:6px">
-                <button class="btn-sm" id="addTeacherBtn" style="background:var(--pink)"><i class="fas fa-plus"></i> 添加老师</button>
-                <button class="btn-sm" id="cloudPushBtn" style="background:var(--accent);color:#0A0A1A"><i class="fas fa-cloud-upload-alt"></i> 推送云端</button>
-            </div>
+<section class="category-section">
+    <div class="section-header"><h2 class="section-title">全部老师</h2><span class="section-badge" id="totalBadge">0</span></div>
+    <div class="card-grid" id="cardGrid"></div>
+</section>
+
+<!-- 老师详情弹窗 -->
+<div class="modal-overlay" id="teacherModal"><div class="modal-content">
+    <button class="modal-close" id="modalClose"><i class="fas fa-times"></i></button>
+    <div class="modal-gallery">
+        <div class="gallery-main" id="galleryMain">
+            <img src="" alt="" id="galleryImg">
+            <button class="gallery-nav gallery-prev" id="galleryPrev"><i class="fas fa-chevron-left"></i></button>
+            <button class="gallery-nav gallery-next" id="galleryNext"><i class="fas fa-chevron-right"></i></button>
+            <div class="gallery-counter" id="galleryCounter">1/1</div>
         </div>
-
-        <div id="dataStatus" style="margin-bottom:10px;padding:8px 12px;background:rgba(124,77,255,0.04);border-radius:8px;font-size:12px">
-            📦 localStorage: <strong id="dataCountLabel" style="color:#fff">0</strong> 位老师
-            <span id="cloudStatus" style="margin-left:12px;font-size:11px;color:var(--text-muted)">☁️ 云端: --</span>
+        <div class="gallery-thumbs" id="galleryThumbs"></div>
+    </div>
+    <div class="modal-info">
+        <div class="modal-header"><h2 id="modalName">—</h2><span class="modal-tg"><i class="fab fa-telegram-plane"></i> @<span id="modalTG">—</span></span><span class="modal-status" id="modalStatus"></span></div>
+        <div class="modal-tags" id="modalTags"></div>
+        <div class="modal-detail-grid">
+            <div class="detail-item"><span class="detail-label"><i class="fas fa-map-marker-alt"></i> 区域</span><span class="detail-value" id="modalDistrict">—</span></div>
+            <div class="detail-item"><span class="detail-label"><i class="fas fa-tag"></i> 价格</span><span class="detail-value price" id="modalPrice">—</span></div>
+            <div class="detail-item"><span class="detail-label"><i class="fas fa-clock"></i> 开课时间</span><span class="detail-value" id="modalSchedule">—</span></div>
+            <div class="detail-item"><span class="detail-label"><i class="fas fa-gift"></i> 优惠</span><span class="detail-value" id="modalDiscount">—</span></div>
         </div>
-
-        <div class="admin-table-wrap">
-            <table><thead><tr>
-                <th>花名</th><th>TG</th><th>区域</th><th>价格</th><th>标签</th><th>状态</th><th>照片</th><th>操作</th>
-            </tr></thead><tbody id="teacherTableBody"></tbody></table>
-        </div>
-
-        <div class="data-actions">
-            <h3>数据管理</h3>
-            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">
-                <button class="btn-sm" id="exportBtn" style="background:var(--cyan);color:#0A0A1A"><i class="fas fa-download"></i> 导出</button>
-                <button class="btn-sm" id="importBtn" style="background:var(--orange)"><i class="fas fa-upload"></i> 导入</button>
-                <button class="btn-sm" id="cloudTestProxyBtn" style="background:var(--purple);color:#fff"><i class="fas fa-robot"></i> 测试代理</button>
-                <button class="btn-sm" id="cloudLoadBtn" style="background:var(--blue);color:#fff"><i class="fas fa-download"></i> 拉取云端</button>
-            </div>
-            <textarea class="code-area" id="importData" placeholder="粘贴JSON数据..."></textarea>
-            <div id="cloudMessage" style="margin-top:4px;font-size:11px;color:var(--text-muted);min-height:16px"></div>
+        <div class="modal-section"><h4><i class="fas fa-info-circle"></i> 简介</h4><p id="modalBio">—</p></div>
+        <div class="modal-section">
+            <div class="review-header"><h4><i class="fas fa-comments"></i> 评价</h4><button class="btn-sm" id="addReviewBtn"><i class="fas fa-plus"></i> 写评价</button></div>
+            <div id="reviewsList"></div>
         </div>
     </div>
+</div></div>
 
-    <!-- ==================== 编辑弹窗 ==================== -->
-    <div class="editor-overlay" id="editorModal">
-        <div class="editor-panel">
-            <h2 id="editorTitle">添加老师</h2>
-            <input type="hidden" id="editId">
-            <div class="f-row">
-                <div class="f-group"><label>花名 *</label><input type="text" id="editName" placeholder="如：雪莉"></div>
-                <div class="f-group"><label>TG账号 *</label><input type="text" id="editTG" placeholder="如：xueli_cd"></div>
+<!-- 评价弹窗 -->
+<div class="modal-overlay" id="reviewModal"><div class="modal-content" style="max-width:420px">
+    <button class="modal-close" id="reviewClose" style="position:absolute;top:12px;right:12px;z-index:10;background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer"><i class="fas fa-times"></i></button>
+    <div style="padding:20px"><h3 style="font-size:16px;font-weight:700;margin-bottom:10px">写评价</h3>
+    <div class="rating-input" style="display:flex;align-items:center;gap:4px;margin:10px 0">
+        <span class="star" data-val="1">★</span><span class="star" data-val="2">★</span><span class="star" data-val="3">★</span><span class="star" data-val="4">★</span><span class="star" data-val="5">★</span>
+        <span class="rating-text" id="ratingText" style="font-size:12px;color:var(--text-muted);margin-left:8px">点击评分</span>
+    </div>
+    <textarea id="reviewText" rows="3" style="width:100%;padding:8px 12px;background:rgba(124,77,255,0.06);border:1px solid rgba(124,77,255,0.1);border-radius:8px;color:#fff;font-size:13px;margin-bottom:8px;resize:vertical" placeholder="分享你的体验..."></textarea>
+    <input id="reviewerName" style="width:100%;padding:8px 12px;background:rgba(124,77,255,0.06);border:1px solid rgba(124,77,255,0.1);border-radius:8px;color:#fff;font-size:13px;margin-bottom:8px" placeholder="你的昵称（选填）">
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button id="reviewCancel" style="padding:8px 16px;font-size:13px;font-weight:600;border-radius:8px;background:rgba(124,77,255,0.1);color:var(--text-secondary);border:none;cursor:pointer">取消</button>
+        <button id="reviewSubmit" style="padding:8px 16px;font-size:13px;font-weight:600;border-radius:8px;background:var(--accent);color:#0A0A1A;border:none;cursor:pointer">提交评价</button>
+    </div>
+</div></div></div>
+
+<!-- 签到弹窗 -->
+<div class="modal-overlay" id="checkinModal"><div class="modal-content" style="max-width:400px">
+    <button class="modal-close" id="chkClose"><i class="fas fa-times"></i></button>
+    <div style="padding:20px;text-align:center">
+        <div style="font-size:36px;margin-bottom:4px">🎯</div>
+        <h2 style="font-size:17px;font-weight:800;margin-bottom:2px">签到中心</h2>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">每日签到，福利不断</p>
+        <div id="chkRoles" style="display:flex;gap:10px">
+            <div id="chkWolf" style="flex:1;padding:16px 12px;background:rgba(124,77,255,0.06);border:1px solid rgba(124,77,255,0.1);border-radius:12px;cursor:pointer">
+                <div style="font-size:28px;margin-bottom:4px">🐺</div><div style="font-size:13px;font-weight:700">我是狼友</div><div style="font-size:11px;color:var(--text-muted)">赚积分换优惠券</div>
             </div>
-            <div class="f-row">
-                <div class="f-group"><label>区域</label>
-                    <select id="editDistrict">
-                        <option>锦江区</option><option>青羊区</option><option>成华区</option>
-                        <option>武侯区</option><option>金牛区</option><option>高新区</option>
-                    </select>
-                </div>
-                <div class="f-group"><label>价格 (¥)</label><input type="number" id="editPrice" placeholder="如：1500"></div>
-            </div>
-            <div class="f-row">
-                <div class="f-group"><label>状态</label><select id="editStatus"><option>营业中</option><option>休息中</option></select></div>
-                <div class="f-group"><label>开课时间</label><input type="text" id="editSchedule" placeholder="如：10:00-22:00"></div>
-            </div>
-            <div class="f-group"><label>优惠</label><input type="text" id="editDiscount" placeholder="如：首单8折"></div>
-            <div class="f-group"><label>简介</label><textarea id="editBio" rows="2" placeholder="填写简介..."></textarea></div>
-            <div class="f-group"><label>标签 (逗号分隔)</label><input type="text" id="editTags" placeholder="如：御姐,嫩妹,BBW"></div>
-            <div class="f-group">
-                <label>照片</label>
-                <div id="photoList"></div>
-                <div style="display:flex;gap:6px;margin-top:4px">
-                    <button class="add-p-btn" id="addPhotoBtn"><i class="fas fa-plus"></i> 空链接</button>
-                    <button class="add-p-btn" id="uploadNewBtn" style="background:rgba(0,229,255,0.12);color:var(--cyan)"><i class="fas fa-cloud-upload-alt"></i> 上传图片</button>
-                </div>
-                <div class="upload-progress" id="uploadProgress"><i class="fas fa-spinner fa-pulse"></i> <span id="uploadStatus">处理中...</span></div>
-                <input type="file" id="imgurFileInput" accept="image/*" style="display:none">
-            </div>
-            <div class="f-actions">
-                <button class="btn-cancel" id="editorCancel">取消</button>
-                <button class="btn-primary" id="editorSave"><i class="fas fa-save"></i> 保存</button>
+            <div id="chkTeacher" style="flex:1;padding:16px 12px;background:rgba(124,77,255,0.06);border:1px solid rgba(124,77,255,0.1);border-radius:12px;cursor:pointer">
+                <div style="font-size:28px;margin-bottom:4px">👩‍🏫</div><div style="font-size:13px;font-weight:700">我是老师</div><div style="font-size:11px;color:var(--text-muted)">更新营业状态</div>
             </div>
         </div>
-    </div>
-
-    <!-- ==================== 老师详情 ==================== -->
-    <div class="modal-overlay" id="teacherModal">
-        <div class="modal-content">
-            <button class="modal-close" id="modalClose"><i class="fas fa-times"></i></button>
-            <div class="modal-gallery">
-                <div class="gallery-main" id="galleryMain">
-                    <img src="" alt="" id="galleryImg" referrerpolicy="no-referrer">
-                    <button class="gallery-nav gallery-prev" id="galleryPrev"><i class="fas fa-chevron-left"></i></button>
-                    <button class="gallery-nav gallery-next" id="galleryNext"><i class="fas fa-chevron-right"></i></button>
-                    <div class="gallery-counter" id="galleryCounter">1 / 1</div>
-                </div>
-                <div class="gallery-thumbs" id="galleryThumbs"></div>
+        <div id="chkWolfRes" style="display:none">
+            <div style="font-size:40px;margin-bottom:6px">✅</div><h3 style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:2px">签到成功！</h3>
+            <p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px" id="wolfMsg">+1 积分</p>
+            <div style="background:rgba(124,77,255,0.08);border-radius:10px;padding:10px;margin-bottom:6px">
+                <div style="font-size:10px;color:var(--text-muted)">当前积分</div>
+                <div style="font-size:24px;font-weight:800;color:var(--cyan)" id="wolfPts">0 分</div>
             </div>
-            <div class="modal-info">
-                <div class="modal-header">
-                    <h2 id="modalName">—</h2>
-                    <span class="modal-tg"><i class="fab fa-telegram-plane"></i> @<span id="modalTG">—</span></span>
-                    <span class="modal-status" id="modalStatus">营业中</span>
-                </div>
-                <div class="modal-tags" id="modalTags"></div>
-                <div class="modal-detail-grid">
-                    <div class="detail-item"><span class="detail-label"><i class="fas fa-map-marker-alt"></i> 区域</span><span class="detail-value" id="modalDistrict">—</span></div>
-                    <div class="detail-item"><span class="detail-label"><i class="fas fa-tag"></i> 价格</span><span class="detail-value price" id="modalPrice">—</span></div>
-                    <div class="detail-item"><span class="detail-label"><i class="fas fa-clock"></i> 开课</span><span class="detail-value" id="modalSchedule">—</span></div>
-                    <div class="detail-item"><span class="detail-label"><i class="fas fa-gift"></i> 优惠</span><span class="detail-value" id="modalDiscount">暂无</span></div>
-                </div>
-                <div class="modal-section"><h4><i class="fas fa-file-alt"></i> 简介</h4><p id="modalBio">暂无</p></div>
-                <div class="modal-section">
-                    <div class="review-header"><h4><i class="fas fa-star"></i> 评价</h4><button class="btn-sm" id="addReviewBtn"><i class="fas fa-plus"></i> 写评价</button></div>
-                    <div class="reviews-container" id="reviewsContainer"><p class="no-reviews">暂无评价</p></div>
-                </div>
-            </div>
+            <button id="chkWolfDone" style="padding:8px 16px;font-size:12px;font-weight:600;border-radius:8px;background:var(--accent);color:#0A0A1A;border:none;cursor:pointer;width:100%;margin-top:6px">知道了</button>
+        </div>
+        <div id="chkTeacherRes" style="display:none">
+            <h3 style="font-size:14px;font-weight:700;margin-bottom:8px;color:var(--cyan)">选择你的老师身份</h3>
+            <div id="chkTeacherList" style="max-height:200px;overflow-y:auto;margin-bottom:8px"></div>
+            <button id="chkTeacherBack" style="padding:6px 14px;font-size:12px;font-weight:600;border-radius:8px;background:rgba(124,77,255,0.1);color:var(--text-secondary);border:none;cursor:pointer;width:100%">返回</button>
+        </div>
+        <div id="chkTeacherDoneRes" style="display:none">
+            <div style="font-size:40px;margin-bottom:6px">✅</div><h3 style="font-size:15px;font-weight:700;color:var(--cyan)">状态已更新！</h3>
+            <p style="font-size:12px;color:var(--text-secondary);margin:4px 0 8px" id="chkTeacherMsg"></p>
+            <button id="chkTeacherDone" style="padding:8px 16px;font-size:12px;font-weight:600;border-radius:8px;background:var(--cyan);color:#0A0A1A;border:none;cursor:pointer;width:100%">完成</button>
         </div>
     </div>
+</div></div>
 
-    <!-- ==================== 评价弹窗 ==================== -->
-    <div class="modal-overlay" id="reviewModal">
-        <div class="modal-content modal-sm">
-            <h3>添加评价</h3>
-            <div class="rating-input">
-                <span class="star" data-val="1">★</span><span class="star" data-val="2">★</span>
-                <span class="star" data-val="3">★</span><span class="star" data-val="4">★</span>
-                <span class="star" data-val="5">★</span>
-                <span class="rating-text" id="ratingText">点击评分</span>
-            </div>
-            <textarea id="reviewText" placeholder="分享你的体验..." rows="3"></textarea>
-            <input type="text" id="reviewerName" placeholder="你的昵称（选填）">
-            <div class="modal-actions">
-                <button class="btn-cancel" id="reviewCancel">取消</button>
-                <button class="btn-primary" id="reviewSubmit">提交</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==================== 签到弹窗 ==================== -->
-    <div class="modal-overlay" id="checkinModal">
-        <div class="modal-content" style="max-width:400px">
-            <button class="modal-close" id="checkinModalClose"><i class="fas fa-times"></i></button>
-            <div style="padding:20px;text-align:center">
-                <div style="font-size:36px;margin-bottom:6px">🎯</div>
-                <h2 style="font-size:18px;font-weight:800;margin-bottom:2px">签到中心</h2>
-                <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">每日签到，福利不断</p>
-                <div class="checkin-role-select" id="checkinRoleSelect">
-                    <div class="checkin-card" id="checkinAsWolf">
-                        <div style="font-size:32px;margin-bottom:6px">🐺</div>
-                        <h3 style="font-size:14px;font-weight:700">我是狼友</h3>
-                        <p style="font-size:11px;color:var(--text-muted)">赚积分换优惠券</p>
-                    </div>
-                    <div class="checkin-card" id="checkinAsTeacher">
-                        <div style="font-size:32px;margin-bottom:6px">👩‍🏫</div>
-                        <h3 style="font-size:14px;font-weight:700">我是老师</h3>
-                        <p style="font-size:11px;color:var(--text-muted)">签到更新营业状态</p>
-                    </div>
-                </div>
-                <div id="wolfCheckinResult" style="display:none">
-                    <div style="font-size:44px;margin-bottom:6px">✅</div>
-                    <h3 style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:2px">签到成功！</h3>
-                    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px" id="wolfCheckinMsg">+1 积分</p>
-                    <div style="background:rgba(124,77,255,0.08);border-radius:10px;padding:10px;margin-bottom:6px">
-                        <div style="font-size:11px;color:var(--text-muted)">当前积分</div>
-                        <div style="font-size:28px;font-weight:800;color:var(--cyan)" id="wolfPointsDisplay">0 分</div>
-                    </div>
-                    <p style="font-size:10px;color:var(--text-muted)">积分可到浦浦一刻群内换优惠券</p>
-                    <button class="btn-primary" id="wolfCheckinDone" style="margin-top:8px;width:100%">知道了</button>
-                </div>
-                <div id="teacherCheckinResult" style="display:none">
-                    <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--cyan)">选择你的老师身份</h3>
-                    <div id="teacherCheckinList" style="max-height:220px;overflow-y:auto;margin-bottom:8px"></div>
-                    <button class="btn-cancel" id="teacherCheckinBack" style="width:100%">返回</button>
-                </div>
-                <div id="teacherCheckinDone" style="display:none">
-                    <div style="font-size:44px;margin-bottom:6px">✅</div>
-                    <h3 style="font-size:16px;font-weight:700;color:var(--cyan)">状态已更新！</h3>
-                    <p style="font-size:13px;color:var(--text-secondary)" id="teacherCheckinMsg"></p>
-                    <button class="btn-primary" id="teacherCheckinFinished" style="margin-top:8px;width:100%">完成</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==================== 签到横幅 ==================== -->
-    <div class="checkin-banner" id="checkinBanner">
-        <i class="fas fa-check-circle"></i>
-        <span id="checkinBannerText">已签到</span>
-    </div>
-
-    <script src="config.js"></script>
-    <script src="cloud.js"></script>
-    <script src="app.js"></script>
+<script src="config.js"></script>
+<script src="cloud.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
