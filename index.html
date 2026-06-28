@@ -61,28 +61,97 @@
         }
     </style>
 
-    <script>
-    // 独立盾牌按钮逻辑（不依赖其他脚本是否加载成功）
+        <script>
+    // 独立控制脚本（不依赖 app.js 是否初始化完成）
     document.addEventListener('DOMContentLoaded', function() {
+        // === 视图切换 ===
         var btn = document.getElementById('adminToggle');
-        if (btn) {
+        var fe = document.getElementById('frontendView');
+        var av = document.getElementById('adminView');
+        if (btn && fe && av) {
             btn.addEventListener('click', function() {
-                var fe = document.getElementById('frontendView');
-                var av = document.getElementById('adminView');
-                if (!fe || !av) return;
-                var isAdmin = av.classList.contains('active');
+                var isAdmin = av.style.display === 'block';
                 fe.style.display = isAdmin ? 'block' : 'none';
                 av.style.display = isAdmin ? 'none' : 'block';
                 document.querySelectorAll('.frontend-only').forEach(function(el) {
                     el.style.display = isAdmin ? '' : 'none';
                 });
                 btn.classList.toggle('active', !isAdmin);
-                // 切换到后台时渲染表格
-                if (!isAdmin && typeof renderAdminTable === 'function') renderAdminTable();
+                if (!isAdmin && typeof renderAdminTable === 'function') {
+                    renderAdminTable();
+                    if (typeof updateCloudStatusBadge === 'function') updateCloudStatusBadge();
+                }
             });
         }
+
+        // === 后台按钮绑定（不依赖 init 执行完毕） ===
+        function tryBind(id, fn) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('click', fn);
+        }
+
+        // 添加/编辑老师
+        tryBind('addTeacherBtn', function(){ if(typeof openEditor==='function') openEditor(null); });
+        tryBind('editorSave', function(){ if(typeof saveTeacher==='function') saveTeacher(); });
+        tryBind('editorCancel', function(){ if(typeof closeEditor==='function') closeEditor(); });
+
+        // 照片
+        tryBind('addPhotoBtn', function(){
+            if (typeof photoUrls !== 'undefined') { photoUrls.push(''); renderPhotoInputs(); }
+        });
+        tryBind('uploadNewBtn', function(){
+            var inp = document.getElementById('imgurFileInput');
+            if (inp) inp.click();
+        });
+        tryBind('imgurFileInput', function(e){
+            if (this.files && this.files[0] && typeof uploadToImgur==='function') uploadToImgur(this.files[0]);
+            this.value = '';
+        });
+
+        // 数据管理
+        tryBind('exportBtn', function(){ if(typeof exportData==='function') exportData(); });
+        tryBind('importBtn', function(){ if(typeof importData==='function') importData(); });
+        tryBind('cloudPushBtn', async function(){
+            if(typeof hasCloudConfig !== 'function' || !hasCloudConfig()) {
+                var msg = document.getElementById('cloudMessage');
+                if(msg){msg.textContent='⚠️ 未配置云端';msg.style.color='var(--orange)'}
+                return;
+            }
+            this.disabled = true;
+            var ok = await saveToCloud(teachers);
+            this.disabled = false;
+            var el = document.getElementById('cloudMessage');
+            if(el){el.textContent=ok?'✅ 推送成功':'❌ 推送失败';el.style.color=ok?'var(--green)':'var(--accent)'}
+        });
+        tryBind('cloudTestProxyBtn', async function(){
+            var el = document.getElementById('cloudMessage');
+            if(!el||typeof testProxyConnection!=='function') return;
+            el.textContent = '⏳ 测试中...';
+            el.style.color = 'var(--cyan)';
+            var r = await testProxyConnection();
+            el.textContent = r.ok?'✅ '+r.msg:'❌ '+r.msg;
+            el.style.color = r.ok?'var(--green)':'var(--accent)';
+        });
+        tryBind('cloudLoadBtn', async function(){
+            var el = document.getElementById('cloudMessage');
+            if(!el||typeof loadFromCloud!=='function') return;
+            el.textContent = '⏳ 拉取中...';
+            el.style.color = 'var(--cyan)';
+            var cd = await loadFromCloud();
+            if(cd&&cd.length>0&&typeof teachers!=='undefined') {
+                teachers = cd;
+                localStorage.setItem('cd_teachers_data', JSON.stringify(teachers));
+                el.textContent = '✅ 拉取 '+cd.length+' 位老师';
+                el.style.color = 'var(--green)';
+                if(typeof renderAdminTable==='function') renderAdminTable();
+                if(typeof applyFilters==='function') applyFilters();
+            } else {
+                el.textContent = '❌ 拉取失败或为空';
+                el.style.color = 'var(--accent)';
+            }
+        });
     });
-    </script>
+    </script></script>
 </head>
 <body>
     <!-- ==================== NAVBAR ==================== -->

@@ -403,53 +403,11 @@ async function init() {
     // -- 签到 --
     initCheckin();
 
-    // 视图切换由 inline 脚本处理
+        // 视图切换由 inline 脚本处理（inline script handles admin toggle）
+    // 前台所有按钮绑定在 init 中完成
 
-    // ---- 后台绑定 ----
-    document.getElementById('addTeacherBtn').addEventListener('click',function(){openEditor(null)});
-    document.getElementById('editorSave').addEventListener('click',saveTeacher);
-    document.getElementById('editorCancel').addEventListener('click',closeEditor);
-    document.getElementById('addPhotoBtn').addEventListener('click',function(){photoUrls.push('');renderPhotoInputs()});
-    document.getElementById('imgurFileInput').addEventListener('change',function(e){if(this.files&&this.files[0])uploadToImgur(this.files[0]);this.value=''});
-    document.getElementById('uploadNewBtn').addEventListener('click',function(){document.getElementById('imgurFileInput').click()});
-    document.getElementById('exportBtn').addEventListener('click',exportData);
-    document.getElementById('importBtn').addEventListener('click',importData);
-    document.getElementById('cloudPushBtn').addEventListener('click',async function(){
-        if (typeof hasCloudConfig==='function'&&hasCloudConfig()) {
-            document.getElementById('cloudPushBtn').disabled=true;
-            var ok = await saveToCloud(teachers);
-            document.getElementById('cloudPushBtn').disabled=false;
-            document.getElementById('cloudMessage').textContent = ok?'✅ 推送成功！':'❌ 推送失败，点测试代理诊断';
-            document.getElementById('cloudMessage').style.color = ok?'var(--green)':'var(--accent)';
-        } else {
-            document.getElementById('cloudMessage').textContent = '⚠️ 未配置云端';
-            document.getElementById('cloudMessage').style.color = 'var(--orange)';
-        }
-    });
-    document.getElementById('cloudTestProxyBtn').addEventListener('click',async function(){
-        document.getElementById('cloudMessage').textContent = '⏳ 测试中...';
-        document.getElementById('cloudMessage').style.color = 'var(--cyan)';
-        if (typeof testProxyConnection==='function') {
-            var r = await testProxyConnection();
-            document.getElementById('cloudMessage').textContent = r.ok?'✅ '+r.msg:'❌ '+r.msg;
-            document.getElementById('cloudMessage').style.color = r.ok?'var(--green)':'var(--accent)';
-        } else {
-            document.getElementById('cloudMessage').textContent = '❌ cloud.js 未加载';
-            document.getElementById('cloudMessage').style.color = 'var(--accent)';
-        }
-    });
-    document.getElementById('cloudLoadBtn').addEventListener('click',async function(){
-        if (typeof loadFromCloud==='function') {
-            document.getElementById('cloudMessage').textContent = '⏳ 拉取中...';
-            document.getElementById('cloudMessage').style.color = 'var(--cyan)';
-            var cd = await loadFromCloud();
-            if (cd&&cd.length>0) {teachers=cd;saveData();renderAdminTable();applyFilters();updateTagFilters();document.getElementById('cloudMessage').textContent='✅ 拉取 '+cd.length+' 位老师'} else {document.getElementById('cloudMessage').textContent='❌ 拉取失败'}
-            document.getElementById('cloudMessage').style.color = 'var(--green)';
-        } else {
-            document.getElementById('cloudMessage').textContent = '❌ cloud.js 未加载';
-        }
-    });
-
+    // ---- 前台绑定（搜索/筛选/模态框/评价/星星评分/滚动） ----
+    // 这些仍在 init 中绑定，因为它们是前台交互
     // ---- 标签筛选 ----
     updateTagFilters();
     applyFilters();
