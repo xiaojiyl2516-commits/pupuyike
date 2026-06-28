@@ -32,6 +32,9 @@ function initAdmin() {
 
     // Import
     document.getElementById('importBtn').addEventListener('click', importData);
+
+    // === 云端同步 ===
+    initCloudUI();
 }
 
 function renderAdminTable() {
@@ -254,3 +257,139 @@ function importData() {
 
 // Init
 document.addEventListener('DOMContentLoaded', initAdmin);
+
+
+// ---------- 云端同步 UI 初始化 ----------
+function initCloudUI() {
+    // 加载已保存的配置
+    var config = getCloudConfig();
+    if (config) {
+        document.getElementById('cloudBinId').value = config.binId || '';
+        document.getElementById('cloudApiKey').value = config.apiKey || '';
+        updateCloudStatus();
+    }
+
+    // 测试连接
+    document.getElementById('cloudTestBtn').addEventListener('click', testCloudConnectionHandler);
+
+    // 保存配置
+    document.getElementById('cloudSaveConfigBtn').addEventListener('click', saveCloudConfigHandler);
+
+    // 推送到云端
+    document.getElementById('cloudPushBtn').addEventListener('click', pushToCloud);
+
+    // 从云端拉取
+    document.getElementById('cloudLoadBtn').addEventListener('click', loadFromCloudHandler);
+
+    // 清除配置
+    document.getElementById('cloudClearBtn').addEventListener('click', function() {
+        localStorage.removeItem(CLOUD_CONFIG_KEY);
+        document.getElementById('cloudBinId').value = '';
+        document.getElementById('cloudApiKey').value = '';
+        updateCloudStatus();
+        setCloudMessage('云端配置已清除', 'var(--text-muted)');
+    });
+}
+
+function updateCloudStatus() {
+    var status = document.getElementById('cloudStatus');
+    var config = getCloudConfig();
+    if (config && config.binId) {
+        status.innerHTML = '<span style="color:var(--cyan)"><i class="fas fa-check-circle"></i> 已配置</span>';
+    } else {
+        status.innerHTML = '<span style="color:var(--text-muted)">未配置</span>';
+    }
+}
+
+function setCloudMessage(msg, color) {
+    var el = document.getElementById('cloudMessage');
+    el.innerHTML = msg;
+    el.style.color = color || 'var(--text-muted)';
+    if (color !== 'red') setTimeout(function() { el.innerHTML = ''; }, 5000);
+}
+
+// 测试连接
+async function testCloudConnectionHandler() {
+    var binId = document.getElementById('cloudBinId').value.trim();
+    var apiKey = document.getElementById('cloudApiKey').value.trim();
+
+    if (!binId) {
+        setCloudMessage('⚠️ 请先填写 Bin ID', 'var(--orange)');
+        return;
+    }
+
+    setCloudMessage('⏳ 正在测试连接...', 'var(--cyan)');
+    document.getElementById('cloudTestBtn').disabled = true;
+
+    var result = await testCloudConnection(binId, apiKey);
+
+    document.getElementById('cloudTestBtn').disabled = false;
+
+    if (result.ok) {
+        setCloudMessage('✅ ' + result.message, 'var(--green)');
+    } else {
+        setCloudMessage('❌ 连接失败: ' + result.message, 'var(--accent)');
+    }
+}
+
+// 保存配置
+function saveCloudConfigHandler() {
+    var binId = document.getElementById('cloudBinId').value.trim();
+    var apiKey = document.getElementById('cloudApiKey').value.trim();
+
+    if (!binId) {
+        setCloudMessage('⚠️ 请填写 Bin ID', 'var(--orange)');
+        return;
+    }
+
+    saveCloudConfig({ binId: binId, apiKey: apiKey });
+    updateCloudStatus();
+    setCloudMessage('✅ 配置已保存', 'var(--cyan)');
+}
+
+// 推送到云端
+async function pushToCloud() {
+    if (!hasCloudConfig()) {
+        setCloudMessage('⚠️ 请先配置并保存 Bin ID', 'var(--orange)');
+        return;
+    }
+
+    setCloudMessage('⏳ 正在推送到云端...', 'var(--cyan)');
+    document.getElementById('cloudPushBtn').disabled = true;
+
+    var ok = await saveToCloud(teachers);
+
+    document.getElementById('cloudPushBtn').disabled = false;
+
+    if (ok) {
+        setCloudMessage('✅ 成功推送到云端！所有设备刷新后将看到最新数据', 'var(--green)');
+    } else {
+        setCloudMessage('❌ 推送失败，请检查 Bin ID 和 API Key', 'var(--accent)');
+    }
+}
+
+// 从云端拉取
+async function loadFromCloudHandler() {
+    if (!hasCloudConfig()) {
+        setCloudMessage('⚠️ 请先配置并保存 Bin ID', 'var(--orange)');
+        return;
+    }
+
+    setCloudMessage('⏳ 正在从云端拉取...', 'var(--cyan)');
+    document.getElementById('cloudLoadBtn').disabled = true;
+
+    var cloudData = await loadFromCloud();
+
+    document.getElementById('cloudLoadBtn').disabled = false;
+
+    if (cloudData && cloudData.length > 0) {
+        teachers = cloudData;
+        saveData();
+        renderAdminTable();
+        setCloudMessage('✅ 从云端拉取了 ' + cloudData.length + ' 位老师数据', 'var(--green)');
+    } else if (cloudData && cloudData.length === 0) {
+        setCloudMessage('⚠️ 云端没有数据，请先推送', 'var(--orange)');
+    } else {
+        setCloudMessage('❌ 拉取失败，请检查配置', 'var(--accent)');
+    }
+}

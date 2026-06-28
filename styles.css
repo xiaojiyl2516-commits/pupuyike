@@ -229,3 +229,27 @@ input,textarea{font-family:inherit;outline:none}
 }
 @media(min-width:641px) and (max-width:1024px){.card-grid{grid-template-columns:repeat(2,1fr)}}
 @media(min-width:1025px){.card-grid{grid-template-columns:repeat(3,1fr);gap:20px}.category-section{max-width:1400px;margin:-40px auto 0;padding:0 40px}}
+
+/* 图片加载失败兜底 */
+.card-photo-container:has(img[style*="display: none"])::after {
+    content: "📷 照片加载失败";
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-muted);
+    font-size: 13px;
+    text-align: center;
+}
+
+.gallery-main:has(img[onerror]) {
+    background: #120338;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+.gallery-main:has(img[onerror])::after {
+    content: "图片加载失败，请检查链接";
+    color: var(--text-muted);
+    font-size: 14px;
+}

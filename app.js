@@ -2,6 +2,14 @@
 // 浦浦荐逼 - Telegram Mini App 主逻辑
 // ============================================================
 
+
+// 动态加载 cloud.js
+(function() {
+    var s = document.createElement('script');
+    s.src = 'cloud.js';
+    document.head.appendChild(s);
+})();
+
 // ---------- Telegram WebApp 初始化 ----------
 const tg = window.Telegram?.WebApp;
 if (tg) {
@@ -142,7 +150,18 @@ let filteredTeachers = [];
 
 // ---------- 数据加载与持久化 ----------
 function loadData() {
-    const saved = localStorage.getItem('cd_teachers_data');
+    var saved = localStorage.getItem('cd_teachers_data');
+
+    // 如果没有本地数据，先尝试云端
+    if (!saved && typeof hasCloudConfig === 'function' && hasCloudConfig()) {
+        console.log('[浦浦荐逼] 无本地数据，尝试从云端加载...');
+        // 云端加载是异步的，这里同步fallback到本地或默认
+        teachers = JSON.parse(JSON.stringify(DEFAULT_TEACHERS));
+        saveData();
+        // 异步云加载在 init 后处理
+        return;
+    }
+
     if (saved) {
         try {
             teachers = JSON.parse(saved);
@@ -159,6 +178,12 @@ function loadData() {
 
 function saveData() {
     localStorage.setItem('cd_teachers_data', JSON.stringify(teachers));
+    // 如果有云端配置，也尝试推送到云端（异步）
+    if (typeof hasCloudConfig === 'function' && hasCloudConfig()) {
+        saveToCloud(teachers).then(function(ok) {
+            if (ok) console.log('[云同步] 已自动同步到云端');
+        }).catch(function() {});
+    }
 }
 
 // ---------- 渲染函数 ----------
@@ -217,7 +242,7 @@ function createCardHTML(t) {
     return `
         <div class="teacher-card" data-id="${t.id}">
             <div class="card-photo-container">
-                <img class="card-photo" src="${t.photos[0]}" alt="${t.name}" loading="lazy">
+                <img referrerpolicy="no-referrer" class="card-photo" src="${t.photos[0]}" alt="${t.name}" loading="lazy">
                 ${t.photos.length > 1 ? `
                     <button class="card-photo-nav prev"><i class="fas fa-chevron-left"></i></button>
                     <button class="card-photo-nav next"><i class="fas fa-chevron-right"></i></button>
@@ -312,7 +337,7 @@ function renderGallery(photos) {
 
     thumbs.innerHTML = photos.map((p, i) => `
         <div class="gallery-thumb ${i === currentPhotoIdx ? 'active' : ''}" data-idx="${i}">
-            <img src="${p}" alt="" loading="lazy">
+            <img referrerpolicy="no-referrer" src="${p}" alt="" loading="lazy">
         </div>
     `).join('');
 
@@ -604,7 +629,48 @@ function init() {
     // Initialize filters and render
     updateTagFilters();
     applyFilters();
+
+    // 异步检查云端是否有更新数据
+    if (typeof hasCloudConfig === 'function' && hasCloudConfig()) {
+        loadFromCloud().then(function(cloudData) {
+            if (cloudData && cloudData.length > 0) {
+                teachers = cloudData;
+                saveData(); // 同步到本地
+                console.log('[浦浦荐逼] 云端数据已同步: ' + teachers.length + ' 位老师');
+                applyFilters();
+                if (typeof updateTagFilters === 'function') updateTagFilters();
+                updateTeacherCount();
+            }
+        }).catch(function() {});
+    }
 }
 
 // Start
+
+function updateTeacherCount() {
+    var count = document.getElementById('teacherCount');
+    var badge = document.getElementById('totalBadge');
+    if (count) count.textContent = teachers.length;
+    if (badge) badge.textContent = teachers.length;
+}
+
 document.addEventListener('DOMContentLoaded', init);
+
+
+// ---------- 图片诊断工具 ----------
+function diagnoseImgUrls() {
+    console.log('=== 图片链接诊断 ===');
+    teachers.forEach(function(t) {
+        t.photos.forEach(function(p, i) {
+            var issue = 'OK';
+            if (!p || p.trim() === '') issue = '❌ 空链接';
+            else if (p.startsWith('https://imgur.com/')) issue = '⚠️ 是imgur网页链接，不是图片直链！正确格式: https://i.imgur.com/xxx.jpg';
+            else if (!p.startsWith('http')) issue = '⚠️ 非HTTP链接';
+            if (issue !== 'OK') console.log(t.name + ' 照片' + (i+1) + ': ' + issue + ' → ' + p);
+        });
+    });
+    console.log('=== 诊断结束 ===');
+}
+
+// 页面加载后自动诊断
+setTimeout(diagnoseImgUrls, 1000);

@@ -143,6 +143,31 @@
                 <i class="fas fa-trash"></i> 清除缓存
             </button>
         </div>
+
+        <!-- 云端同步配置 -->
+        <div style="margin-bottom:14px;padding:14px;background:rgba(124,77,255,0.08);border-radius:10px;border:1px solid rgba(124,77,255,0.12)">
+            <h3 style="font-size:14px;font-weight:700;margin-bottom:8px;color:var(--cyan);display:flex;align-items:center;gap:6px">
+                <i class="fas fa-cloud-upload-alt"></i> 云端同步
+                <span id="cloudStatus" style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:auto">未配置</span>
+            </h3>
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px">
+                启用云端同步后，所有设备（手机 TG / 电脑 / 平板）共用同一份数据。
+                需要 <a href="https://jsonbin.io" target="_blank" style="color:var(--cyan)">免费注册 JSONBin.io</a> → 创建 Bin → 获取 Bin ID 和 API Key。
+            </p>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
+                <input type="text" id="cloudBinId" placeholder="Bin ID（必填）" style="padding:8px 10px;background:rgba(0,0,0,0.2);border:1px solid rgba(124,77,255,0.15);border-radius:6px;color:#fff;font-size:13px">
+                <input type="password" id="cloudApiKey" placeholder="API Key（选填，建议填写）" style="padding:8px 10px;background:rgba(0,0,0,0.2);border:1px solid rgba(124,77,255,0.15);border-radius:6px;color:#fff;font-size:13px">
+            </div>
+            <div style="display:flex;gap:6px">
+                <button class="btn-sm" id="cloudTestBtn" style="background:var(--cyan);color:#0A0A1A;box-shadow:none"><i class="fas fa-plug"></i> 测试连接</button>
+                <button class="btn-sm" id="cloudSaveConfigBtn"><i class="fas fa-save"></i> 保存配置</button>
+                <button class="btn-sm" id="cloudPushBtn" style="background:var(--pink);color:#fff;box-shadow:none"><i class="fas fa-upload"></i> 立即推送到云端</button>
+                <button class="btn-sm" id="cloudLoadBtn" style="background:var(--purple);color:#fff;box-shadow:none"><i class="fas fa-download"></i> 从云端拉取</button>
+                <button class="btn-sm" id="cloudClearBtn" style="background:rgba(255,255,255,0.08);color:var(--text-muted);box-shadow:none"><i class="fas fa-times"></i> 清除配置</button>
+            </div>
+            <div id="cloudMessage" style="margin-top:6px;font-size:12px;color:var(--text-muted);min-height:20px"></div>
+        </div>
+
         <h3><i class="fas fa-database"></i> 数据管理</h3>
         <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">你可以导出全部数据（JSON格式），编辑后粘贴回下方导入。</p>
         <button class="btn-export" id="exportBtn" style="margin-bottom:8px"><i class="fas fa-download"></i> 导出数据 (JSON)</button>
@@ -150,6 +175,7 @@
         <button class="btn-sm" id="importBtn" style="margin-top:6px;background:var(--orange)"><i class="fas fa-upload"></i> 导入数据</button>
     </div>
 
+    <script src="cloud.js"></script>
     <script src="app.js"></script>
     <script src="admin.js"></script>
 </body>
