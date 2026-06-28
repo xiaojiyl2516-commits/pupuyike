@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蓉城·名媛 - 管理后台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body{background:#1a1a2e;padding-top:24px;max-width:1200px;margin:0 auto;padding:24px 20px}
+        .admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+        .admin-header h1{font-size:24px;font-weight:800;background:linear-gradient(135deg,#e50914,#ff6b35);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .admin-actions{display:flex;gap:8px;flex-wrap:wrap}
+        .btn-add{padding:10px 20px;font-size:14px;font-weight:600;border-radius:10px;background:var(--accent);color:#fff;transition:var(--transition);display:flex;align-items:center;gap:6px}
+        .btn-add:hover{background:var(--accent-hover)}
+        .btn-export{padding:10px 20px;font-size:14px;font-weight:600;border-radius:10px;background:var(--green);color:#fff;transition:var(--transition);display:flex;align-items:center;gap:6px}
+        .btn-export:hover{opacity:.8}
+        .teacher-table{width:100%;border-collapse:collapse;background:var(--bg-card);border-radius:12px;overflow:hidden;margin-bottom:24px}
+        .teacher-table th{background:var(--bg-elevated);padding:12px 14px;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;text-align:left;white-space:nowrap}
+        .teacher-table td{padding:12px 14px;font-size:13px;color:var(--text-secondary);border-bottom:1px solid rgba(255,255,255,0.03);vertical-align:middle}
+        .teacher-table tr:hover td{background:rgba(255,255,255,0.02)}
+        .tag-pills{display:flex;gap:3px;flex-wrap:wrap}
+        .tag-pill{font-size:10px;font-weight:500;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,0.06);color:var(--text-secondary)}
+        .status-badge{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;display:inline-block}
+        .status-badge.online{background:rgba(46,204,113,0.2);color:var(--green)}
+        .status-badge.offline{background:rgba(149,165,166,0.2);color:var(--text-muted)}
+        .action-btn{padding:5px 10px;font-size:11px;font-weight:600;border-radius:6px;transition:var(--transition);color:var(--text-secondary)}
+        .action-btn:hover{background:rgba(255,255,255,0.06);color:#fff}
+        .action-btn.edit{color:var(--blue)}
+        .action-btn.delete{color:var(--accent)}
+        .action-btn.toggle{color:var(--green)}
+        .modal-backdrop{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);padding:20px}
+        .modal-backdrop.open{display:flex}
+        .editor-panel{background:var(--bg-secondary);border-radius:16px;padding:24px;width:100%;max-width:600px;max-height:85vh;overflow-y:auto;border:1px solid rgba(255,255,255,0.06)}
+        .editor-panel h2{font-size:18px;font-weight:700;margin-bottom:16px}
+        .form-group{margin-bottom:12px}
+        .form-group label{display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+        .form-group input,.form-group textarea,.form-group select{width:100%;padding:9px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:13px;font-family:inherit}
+        .form-group input:focus,.form-group textarea:focus{border-color:var(--accent)}
+        .form-group textarea{resize:vertical;min-height:60px}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)}
+        .photo-input-group{display:flex;gap:6px;align-items:center;margin-bottom:4px}
+        .photo-input-group input{flex:1}
+        .add-photo-btn{padding:9px 12px;font-size:12px;border-radius:6px;background:rgba(255,255,255,0.06);color:var(--text-secondary)}
+        .add-photo-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
+        .remove-photo-btn{color:var(--accent);padding:4px;font-size:12px}
+        .tag-input-group{display:flex;gap:6px;margin-bottom:4px}
+        .tag-input-group input{flex:1}
+        .data-actions{margin-top:24px;padding:16px;background:var(--bg-card);border-radius:12px}
+        .data-actions h3{font-size:14px;font-weight:600;margin-bottom:8px;color:var(--text-secondary)}
+        .textarea-code{width:100%;min-height:120px;padding:10px;background:#0d0d1a;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#a0a0c0;font-size:12px;font-family:monospace;resize:vertical}
+        @media(max-width:640px){
+            .form-row{grid-template-columns:1fr}
+            .teacher-table{font-size:12px}
+            .teacher-table th,.teacher-table td{padding:8px 10px}
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-header">
+        <h1><i class="fas fa-shield-alt"></i> 蓉城·名媛 · 管理后台</h1>
+        <div class="admin-actions">
+            <a href="index.html" class="btn-sm" style="background:rgba(255,255,255,0.06);color:var(--text-secondary);text-decoration:none"><i class="fas fa-external-link-alt"></i> 查看前台</a>
+            <button class="btn-add" id="addTeacherBtn"><i class="fas fa-plus"></i> 添加老师</button>
+        </div>
+    </div>
+
+    <table class="teacher-table">
+        <thead>
+            <tr>
+                <th>花名</th>
+                <th>TG账号</th>
+                <th>区域</th>
+                <th>价格</th>
+                <th>标签</th>
+                <th>状态</th>
+                <th>照片</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="teacherTableBody"></tbody>
+    </table>
+
+    <!-- Editor Modal -->
+    <div class="modal-backdrop" id="editorModal">
+        <div class="editor-panel">
+            <h2 id="editorTitle">添加老师</h2>
+            <input type="hidden" id="editId">
+            <div class="form-row">
+                <div class="form-group"><label>花名 *</label><input type="text" id="editName" placeholder="如：雪莉"></div>
+                <div class="form-group"><label>TG账号 *</label><input type="text" id="editTG" placeholder="如：xueli_cd"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>所在区域 *</label>
+                    <select id="editDistrict">
+                        <option value="锦江区">锦江区</option>
+                        <option value="青羊区">青羊区</option>
+                        <option value="成华区">成华区</option>
+                        <option value="武侯区">武侯区</option>
+                        <option value="金牛区">金牛区</option>
+                        <option value="高新区">高新区</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>价格 (¥) *</label><input type="number" id="editPrice" placeholder="如：1500" min="0"></div>
+            </div>
+            <div class="form-group"><label>开课状态</label>
+                <select id="editStatus">
+                    <option value="营业中">营业中</option>
+                    <option value="休息中">休息中</option>
+                </select>
+            </div>
+            <div class="form-group"><label>开课时间</label><input type="text" id="editSchedule" placeholder="如：10:00 - 22:00"></div>
+            <div class="form-group"><label>优惠信息</label><input type="text" id="editDiscount" placeholder="如：首单8折"></div>
+            <div class="form-group"><label>老师简介</label><textarea id="editBio" rows="3" placeholder="填写老师简介..."></textarea></div>
+
+            <div class="form-group">
+                <label>照片链接 (最多10张，第一张为主图)</label>
+                <div id="photoList"></div>
+                <button class="add-photo-btn" id="addPhotoBtn"><i class="fas fa-plus"></i> 添加照片</button>
+            </div>
+
+            <div class="form-group">
+                <label>标签 (用逗号分隔)</label>
+                <input type="text" id="editTags" placeholder="如：御姐,嫩妹,少妇,BBW">
+            </div>
+
+            <div class="form-actions">
+                <button class="btn-cancel" id="editorCancel">取消</button>
+                <button class="btn-primary" id="editorSave"><i class="fas fa-save"></i> 保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Export/Import -->
+    <div class="data-actions">
+        <h3><i class="fas fa-database"></i> 数据管理</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">你可以导出全部数据（JSON格式），编辑后粘贴回下方导入。</p>
+        <button class="btn-export" id="exportBtn" style="margin-bottom:8px"><i class="fas fa-download"></i> 导出数据 (JSON)</button>
+        <div><textarea class="textarea-code" id="importData" placeholder="在此粘贴JSON数据后点击导入..."></textarea></div>
+        <button class="btn-sm" id="importBtn" style="margin-top:6px;background:var(--orange)"><i class="fas fa-upload"></i> 导入数据</button>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
