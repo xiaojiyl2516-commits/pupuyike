@@ -15,24 +15,27 @@ var currentPhotoIdx = 0, currentRating = 0, photoUrls = [''], editingId = null;
 
 // ---------- 数据管理 ----------
 async function loadData() {
-    try {
-        var saved = localStorage.getItem('cd_data');
-        if (saved) {
-            teachers = JSON.parse(saved);
-            tryLoadCloud();
-            return;
-        }
-    } catch(e) {}
+    // 尝试从云端加载（优先）
+    var cloudOk = false;
     if (typeof hasCloudConfig === 'function' && hasCloudConfig()) {
         try {
             var cd = await loadFromCloud();
             if (cd && cd.length > 0) {
                 teachers = cd;
                 saveData();
-                return;
+                cloudOk = true;
             }
         } catch(e) { console.warn('cloud load failed', e); }
     }
+    if (cloudOk) return;
+    // 云端无数据，降级到 localStorage
+    try {
+        var saved = localStorage.getItem('cd_data');
+        if (saved) {
+            teachers = JSON.parse(saved);
+            return;
+        }
+    } catch(e) {}
     teachers = [];
     saveData();
 }
