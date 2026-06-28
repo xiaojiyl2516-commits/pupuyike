@@ -27,6 +27,17 @@ function initAdmin() {
         renderPhotoInputs();
     });
 
+    // Imgur一键上传
+    document.getElementById('imgurFileInput').addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+            uploadToImgur(this.files[0]);
+        }
+        this.value = '';
+    });
+    document.getElementById('uploadNewBtn').addEventListener('click', function() {
+        document.getElementById('imgurFileInput').click();
+    });
+
     // Export
     document.getElementById('exportBtn').addEventListener('click', exportData);
 
@@ -391,5 +402,118 @@ async function loadFromCloudHandler() {
         setCloudMessage('⚠️ 云端没有数据，请先推送', 'var(--orange)');
     } else {
         setCloudMessage('❌ 拉取失败，请检查配置', 'var(--accent)');
+    }
+}
+
+// ---------- 一键上传（sm.ms 默认 / Imgur 备选）----------
+function uploadToSmms(file) {
+    var progress = document.getElementById('uploadProgress');
+    var status = document.getElementById('uploadStatus');
+    progress.style.display = 'block';
+    status.innerHTML = '正在上传 ' + file.name + ' ...';
+
+    var formData = new FormData();
+    formData.append('smfile', file);
+
+    fetch('https://sm.ms/api/v2/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.success && data.data) {
+            // sm.ms 返回的直链格式: https://i.sm.ms/ + storename
+            var url = data.data.url;          // 页面链接
+            var directUrl = 'https://i.sm.ms/' + data.data.storename;  // 直链
+            status.innerHTML = '✅ 上传成功！';
+            setTimeout(function() { progress.style.display = 'none'; }, 1500);
+
+            fillPhotoUrl(directUrl);
+        } else {
+            // 部分失败时 msg 可能有详情
+            var errMsg = data.message || data.msg || '未知错误';
+            // sm.ms 有时返回 "Image upload repeated" 说明图片已存在
+            if (data.images) {
+                var dupUrl = 'https://i.sm.ms/' + (data.images.split('/').pop());
+                status.innerHTML = '⚠️ 图片已存在，直接使用';
+                setTimeout(function() { progress.style.display = 'none'; }, 1500);
+                fillPhotoUrl(dupUrl);
+            } else {
+                status.innerHTML = '❌ 上传失败: ' + errMsg;
+                setTimeout(function() { progress.style.display = 'none'; }, 3000);
+            }
+        }
+    })
+    .catch(function(err) {
+        status.innerHTML = '❌ 网络错误: ' + err.message;
+        setTimeout(function() { progress.style.display = 'none'; }, 3000);
+    });
+}
+
+// 自动填入照片URL
+function fillPhotoUrl(url) {
+    var emptyIdx = -1;
+    for (var i = 0; i < photoUrls.length; i++) {
+        if (!photoUrls[i] || photoUrls[i].trim() === '') {
+            emptyIdx = i;
+            break;
+        }
+    }
+    if (emptyIdx >= 0) {
+        photoUrls[emptyIdx] = url;
+    } else {
+        photoUrls.push(url);
+    }
+    renderPhotoInputs();
+}
+
+// 上传入口（自动选择图床）
+function uploadToImgur(file) {
+    // 如果有 Imgur Client ID，用 Imgur；否则用 sm.ms
+    var clientId = '';
+    if (typeof CLOUD_CONFIG !== 'undefined' && CLOUD_CONFIG && CLOUD_CONFIG.imgurClientId) {
+        clientId = CLOUD_CONFIG.imgurClientId;
+    }
+    if (clientId) {
+        // Imgur 上传
+        var progress = document.getElementById('uploadProgress');
+        var status = document.getElementById('uploadStatus');
+        progress.style.display = 'block';
+        status.innerHTML = '正在上传 ' + file.name + ' ...';
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var base64 = e.target.result.split(',')[1];
+            fetch('https://api.imgur.com/3/image', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Client-ID ' + clientId,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: base64, type: 'base64' })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success && data.data && data.data.link) {
+                    status.innerHTML = '✅ 上传成功！';
+                    setTimeout(function() { progress.style.display = 'none'; }, 1500);
+                    fillPhotoUrl(data.data.link);
+                } else {
+                    status.innerHTML = '❌ 上传失败，换 sm.ms 重试';
+                    setTimeout(function() { progress.style.display = 'none'; }, 1000);
+                    uploadToSmms(file); // 自动降级
+                }
+            })
+            .catch(function() {
+                status.innerHTML = '⚠️ Imgur 失败，切到 sm.ms...';
+                uploadToSmms(file);
+            });
+        };
+        reader.onerror = function() {
+            status.innerHTML = '❌ 读取文件失败';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        uploadToSmms(file);
     }
 }

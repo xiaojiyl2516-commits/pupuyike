@@ -117,9 +117,18 @@
             <div class="form-group"><label>老师简介</label><textarea id="editBio" rows="3" placeholder="填写老师简介..."></textarea></div>
 
             <div class="form-group">
-                <label>照片链接 (最多10张，第一张为主图)</label>
+                <label>照片 (最多10张，第一张为主图)</label>
                 <div id="photoList"></div>
-                <button class="add-photo-btn" id="addPhotoBtn"><i class="fas fa-plus"></i> 添加照片</button>
+                <div style="display:flex;gap:6px;margin-top:4px">
+                    <button class="add-photo-btn" id="addPhotoBtn"><i class="fas fa-plus"></i> 空链接</button>
+                    <button class="add-photo-btn" id="uploadNewBtn" style="background:rgba(0,229,255,0.15);color:var(--cyan);border-color:rgba(0,229,255,0.2)">
+                        <i class="fas fa-cloud-upload-alt"></i> 上传新图片
+                    </button>
+                </div>
+                <div id="uploadProgress" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(0,229,255,0.06);border-radius:8px;font-size:12px;color:var(--cyan)">
+                    <i class="fas fa-spinner fa-pulse"></i> <span id="uploadStatus">正在上传...</span>
+                </div>
+                <input type="file" id="imgurFileInput" accept="image/*" style="display:none">
             </div>
 
             <div class="form-group">
