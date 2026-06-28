@@ -57,13 +57,20 @@ async function tryLoadCloud() {
 async function pushCloud() {
     if (typeof hasCloudConfig !== 'function' || !hasCloudConfig()) { showMsg('⚠️ 云端未配置'); return; }
     showMsg('⏳ 推送中...');
+    CLOUD_LAST_ERROR = '';
     var ok = await saveToCloud(teachers);
-    showMsg(ok ? '✅ 推送成功' : '❌ 推送失败');
+    if (ok) {
+        showMsg('✅ 推送成功');
+    } else {
+        var err = typeof getLastError === 'function' ? getLastError() : '';
+        showMsg('❌ 推送失败' + (err ? ': ' + err : ''));
+    }
 }
 
 async function pullCloud() {
     if (typeof hasCloudConfig !== 'function' || !hasCloudConfig()) { showMsg('⚠️ 云端未配置'); return; }
     showMsg('⏳ 拉取中...');
+    CLOUD_LAST_ERROR = '';
     var cd = await loadFromCloud();
     if (cd && cd.length > 0) {
         teachers = cd; saveData(); applyFilters(); updateTagFilters();
@@ -71,7 +78,8 @@ async function pullCloud() {
         if (tbl) renderAdminTable();
         showMsg('✅ 拉取 ' + cd.length + ' 位老师');
     } else {
-        showMsg('❌ 无数据或失败');
+        var err = typeof getLastError === 'function' ? getLastError() : '';
+        showMsg('❌ 拉取失败' + (err ? ': ' + err : ''));
     }
 }
 
