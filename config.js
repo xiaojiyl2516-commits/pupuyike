@@ -16,5 +16,5 @@ var CLOUD_CONFIG = {
     imgurClientId: '',
     // 你的 JSONBin ID（必填）
     binId: '6a410a3ff5f4af5e293cdb44',
-apiKey: '$2a$10$ZH4zbsTfOIbbpzzW8Xmg6eEV5CIYXD2Jy9C86Q9t9JRMwpEVGYRMe'
+apiKey: '$2a$10$VcX6tu/FPh3ca5JX8txpYulxUhbgVYNcHky/yLAA/uRa0s38jO1CC'
 };
