@@ -154,3 +154,45 @@ async function testCloudConnection(binId, apiKey) {
         return { ok: false, message: e.message };
     }
 }
+
+
+// 测试代理是否正常工作
+async function testProxyConnection() {
+    var config = getCloudConfig();
+    if (!config || !config.binId) {
+        return { ok: false, msg: '请先配置 Bin ID' };
+    }
+
+    try {
+        var proxyUrl = window.location.origin + '/api/sync';
+        var startTime = Date.now();
+
+        var res = await fetch(proxyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'pull',
+                binId: config.binId,
+                apiKey: config.apiKey || ''
+            })
+        });
+
+        var elapsed = Date.now() - startTime;
+        var result = await res.json();
+
+        if (res.ok && result.success) {
+            var recordCount = 0;
+            if (result.data && result.data.record && Array.isArray(result.data.record)) {
+                recordCount = result.data.record.length;
+            } else if (Array.isArray(result.data)) {
+                recordCount = result.data.length;
+            }
+            return { ok: true, msg: '代理正常 (' + elapsed + 'ms) · 云端 ' + recordCount + ' 位老师', data: result };
+        } else {
+            var errMsg = result.error || result.message || 'HTTP ' + res.status;
+            return { ok: false, msg: '代理返回错误: ' + errMsg, raw: result };
+        }
+    } catch(e) {
+        return { ok: false, msg: '无法连接代理: ' + e.message + '\n\n可能原因:\n1. 还没上传 api/sync.js 到 GitHub\n2. Vercel 还没部署完成\n3. 路径不是 /api/sync' };
+    }
+}

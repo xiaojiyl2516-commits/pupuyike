@@ -230,6 +230,7 @@ function initCloudUI() {
     document.getElementById('cloudSaveConfigBtn').addEventListener('click', saveCloudConfigHandler);
     document.getElementById('cloudPushBtn').addEventListener('click', pushToCloud);
     document.getElementById('cloudLoadBtn').addEventListener('click', loadFromCloudHandler);
+    document.getElementById('cloudTestProxyBtn').addEventListener('click', testProxyHandler);
     document.getElementById('cloudClearBtn').addEventListener('click', function() {
         localStorage.removeItem('ppjb_cloud_config');
         document.getElementById('cloudBinId').value = '';
@@ -280,7 +281,8 @@ async function pushToCloud() {
     document.getElementById('cloudPushBtn').disabled = true;
     var ok = await saveToCloud(teachers);
     document.getElementById('cloudPushBtn').disabled = false;
-    setCloudMessage(ok ? '✅ 推送成功！所有设备刷新后将看到最新数据' : '❌ 推送失败', ok ? 'var(--green)' : 'var(--accent)');
+    setCloudMessage(ok ? '✅ 推送成功！刷新前台即可看到' : '❌ 推送失败，点击「测试代理」查看原因', ok ? 'var(--green)' : 'var(--accent)');
+        if (!ok) console.warn('[云同步] 推送失败，尝试点「测试代理」诊断');
 }
 
 async function loadFromCloudHandler() {
@@ -295,7 +297,7 @@ async function loadFromCloudHandler() {
     } else if (cloudData && cloudData.length === 0) {
         setCloudMessage('⚠️ 云端无数据', 'var(--orange)');
     } else {
-        setCloudMessage('❌ 拉取失败', 'var(--accent)');
+        setCloudMessage('❌ 拉取失败，点「测试代理」诊断', 'var(--accent)');
     }
 }
 
@@ -343,3 +345,17 @@ function fillPhotoUrl(url) {
 }
 
 document.addEventListener('DOMContentLoaded', initAdmin);
+
+async function testProxyHandler() {
+    setCloudMessage('⏳ 正在测试代理连接...', 'var(--cyan)');
+    document.getElementById('cloudTestProxyBtn').disabled = true;
+    var result = await testProxyConnection();
+    document.getElementById('cloudTestProxyBtn').disabled = false;
+    if (result.ok) {
+        setCloudMessage('✅ ' + result.msg, 'var(--green)');
+    } else {
+        setCloudMessage('❌ ' + result.msg, 'var(--accent)');
+        // 在控制台打印详细信息
+        console.error('[云同步] 代理测试失败详情:', result);
+    }
+}
