@@ -149,19 +149,24 @@ let currentRating = 0;
 let filteredTeachers = [];
 
 // ---------- 数据加载与持久化 ----------
-function loadData() {
-    var saved = localStorage.getItem('cd_teachers_data');
-
-    // 如果没有本地数据，先尝试云端
-    if (!saved && typeof hasCloudConfig === 'function' && hasCloudConfig()) {
-        console.log('[浦浦荐逼] 无本地数据，尝试从云端加载...');
-        // 云端加载是异步的，这里同步fallback到本地或默认
-        teachers = JSON.parse(JSON.stringify(DEFAULT_TEACHERS));
-        saveData();
-        // 异步云加载在 init 后处理
-        return;
+async function loadData() {
+    // 优先从云端加载（如果配置了云同步）
+    if (typeof hasCloudConfig === 'function' && hasCloudConfig()) {
+        try {
+            var cloudData = await loadFromCloud();
+            if (cloudData && cloudData.length > 0) {
+                teachers = cloudData;
+                localStorage.setItem('cd_teachers_data', JSON.stringify(teachers));
+                console.log('[浦浦荐逼] 从云端加载: ' + teachers.length + ' 位老师');
+                return;
+            }
+        } catch(e) {
+            console.warn('[浦浦荐逼] 云端加载失败，回退本地', e.message);
+        }
     }
 
+    // 回退到 localStorage
+    var saved = localStorage.getItem('cd_teachers_data');
     if (saved) {
         try {
             teachers = JSON.parse(saved);
@@ -171,11 +176,12 @@ function loadData() {
             console.warn('[浦浦荐逼] localStorage 数据解析失败，使用默认数据');
         }
     }
+
+    // 回退到默认示例数据
     teachers = JSON.parse(JSON.stringify(DEFAULT_TEACHERS));
-    saveData();
+    localStorage.setItem('cd_teachers_data', JSON.stringify(teachers));
     console.log('[浦浦荐逼] 已加载默认示例数据: ' + teachers.length + ' 位老师');
 }
-
 function saveData() {
     localStorage.setItem('cd_teachers_data', JSON.stringify(teachers));
     // 如果有云端配置，也尝试推送到云端（异步）
@@ -510,8 +516,8 @@ function submitReview() {
 }
 
 // ---------- 初始化 ----------
-function init() {
-    loadData();
+async function init() {
+    await loadData();
 
     // ✅ 如果是后台页面，跳过所有 UI 绑定（admin.html 不需要前台 UI）
     if (!document.getElementById('cardGrid')) return;
@@ -633,19 +639,6 @@ function init() {
     // 签到中心初始化
     initCheckinCenter();
 
-    // 异步检查云端是否有更新数据
-    if (typeof hasCloudConfig === 'function' && hasCloudConfig()) {
-        loadFromCloud().then(function(cloudData) {
-            if (cloudData && cloudData.length > 0) {
-                teachers = cloudData;
-                saveData(); // 同步到本地
-                console.log('[浦浦荐逼] 云端数据已同步: ' + teachers.length + ' 位老师');
-                applyFilters();
-                if (typeof updateTagFilters === 'function') updateTagFilters();
-                updateTeacherCount();
-            }
-        }).catch(function() {});
-    }
 }
 
 // Start
