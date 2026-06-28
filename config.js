@@ -12,9 +12,7 @@
 // ============================================================
 
 var CLOUD_CONFIG = {
-    // 默认使用 sm.ms 上传（无需注册，国内可访问）
-    // 如需切到 Imgur，填上 Client ID 即可
-    // 获取: https://api.imgur.com/oauth2/addclient
+    // （已废弃）以前用于图床上传，现在照片直接存 base64
     imgurClientId: '',
     // 你的 JSONBin ID（必填）
     binId: '6a410a3ff5f4af5e293cdb44',
